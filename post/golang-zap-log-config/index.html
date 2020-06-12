@@ -1,0 +1,255 @@
+<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge,chrome=1"><title>Golang 日志库 zap 使用配置 - dark moon</title><meta name=renderer content=webkit><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv=cache-control content=no-transform><meta http-equiv=cache-control content=no-siteapp><meta name=theme-color content=#f8f5ec><meta name=msapplication-navbutton-color content=#f8f5ec><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=#f8f5ec><meta name=author content=moonD4rk><meta name=description content="zap 是 uber 出的一款日志库，拥有强大的性能和可配置性，这篇博客带大家了解一下 zap 的配置和使用过程。这是 zap 项目主页罗列的性能测试，可以看到性能方面 zap 还"><meta name=keywords content=Hugo,theme,even><meta name=robots content><meta name=generator content="Hugo 0.54.0 with even 4.0.0"><link rel=canonical href=https://moond4rk.xyz/post/golang-zap-log-config/><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/manifest.json><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link href=/dist/even.58b28b82.min.css rel=stylesheet><link href=/lib/fancybox/jquery.fancybox-3.1.20.min.css rel=stylesheet><meta property=og:title content="Golang 日志库 zap 使用配置"><meta property=og:description content="zap 是 uber 出的一款日志库，拥有强大的性能和可配置性，这篇博客带大家了解一下 zap 的配置和使用过程。这是 zap 项目主页罗列的性能测试，可以看到性能方面 zap 还"><meta property=og:type content=article><meta property=og:url content=https://moond4rk.xyz/post/golang-zap-log-config/><meta property=article:published_time content=2020-06-12T09:52:48&#43;08:00><meta property=article:modified_time content=2020-06-12T09:52:48&#43;08:00><meta itemprop=name content="Golang 日志库 zap 使用配置"><meta itemprop=description content="zap 是 uber 出的一款日志库，拥有强大的性能和可配置性，这篇博客带大家了解一下 zap 的配置和使用过程。这是 zap 项目主页罗列的性能测试，可以看到性能方面 zap 还"><meta itemprop=datePublished content=2020-06-12T09:52:48&#43;08:00><meta itemprop=dateModified content=2020-06-12T09:52:48&#43;08:00><meta itemprop=wordCount content=1162><meta itemprop=keywords content=Golang,><meta name=twitter:card content=summary><meta name=twitter:title content="Golang 日志库 zap 使用配置"><meta name=twitter:description content="zap 是 uber 出的一款日志库，拥有强大的性能和可配置性，这篇博客带大家了解一下 zap 的配置和使用过程。这是 zap 项目主页罗列的性能测试，可以看到性能方面 zap 还"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script><script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]--></head><body><div id=mobile-navbar class=mobile-navbar><div class=mobile-header-logo><a href=/ class=logo>Dark Moon</a></div><div class=mobile-navbar-icon><span></span><span></span><span></span></div></div><nav id=mobile-menu class="mobile-menu slideout-menu"><ul class=mobile-menu-list><a href=/post/><li class=mobile-menu-item>归档</li></a><a href=/tags/><li class=mobile-menu-item>标签</li></a><a href=/categories/><li class=mobile-menu-item>分类</li></a><a href=/about/><li class=mobile-menu-item>关于</li></a></ul></nav><div class=container id=mobile-panel><header id=header class=header><div class=logo-wrapper><a href=/ class=logo>Dark Moon</a></div><nav class=site-navbar><ul id=menu class=menu><li class=menu-item><a class=menu-item-link href=/post/>归档</a></li><li class=menu-item><a class=menu-item-link href=/tags/>标签</a></li><li class=menu-item><a class=menu-item-link href=/categories/>分类</a></li><li class=menu-item><a class=menu-item-link href=/about/>关于</a></li></ul></nav></header><main id=main class=main><div class=content-wrapper><div id=content class=content><article class=post><header class=post-header><h1 class=post-title>Golang 日志库 zap 使用配置</h1><div class=post-meta><span class=post-time>2020-06-12</span><div class=post-category><a href=/categories/log/>log</a>
+<a href=/categories/%E5%BC%80%E5%8F%91/>开发</a>
+<a href=/categories/golang/>Golang</a></div></div></header><div class=post-content><p><a href=https://github.com/uber-go/zap>zap</a> 是 uber 出的一款日志库，拥有强大的性能和可配置性，这篇博客带大家了解一下 zap 的配置和使用过程。这是 zap 项目主页罗列的性能测试，可以看到性能方面 zap 还是很强的，比更为主流常用的 <a href=https://github.com/sirupsen/logrus>logrus</a> 要高出不少。</p><table><thead><tr><th>Package</th><th>Time</th><th>Time % to zap</th><th>Objects Allocated</th></tr></thead><tbody><tr><td>⚡ zap</td><td>862 ns/op</td><td>+0%</td><td>5 allocs/op</td></tr><tr><td>⚡ zap (sugared)</td><td>1250 ns/op</td><td>+45%</td><td>11 allocs/op</td></tr><tr><td>zerolog</td><td>4021 ns/op</td><td>+366%</td><td>76 allocs/op</td></tr><tr><td>go-kit</td><td>4542 ns/op</td><td>+427%</td><td>105 allocs/op</td></tr><tr><td>apex/log</td><td>26785 ns/op</td><td>+3007%</td><td>115 allocs/op</td></tr><tr><td>logrus</td><td>29501 ns/op</td><td>+3322%</td><td>125 allocs/op</td></tr><tr><td>log15</td><td>29906 ns/op</td><td>+3369%</td><td>122 allocs/op</td></tr></tbody></table><h3 id=基础使用>基础使用</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
+
+<span class=kn>import</span> <span class=p>(</span>
+	<span class=s>&#34;fmt&#34;</span>
+
+	<span class=s>&#34;go.uber.org/zap&#34;</span>
+	<span class=s>&#34;go.uber.org/zap/zapcore&#34;</span>
+<span class=p>)</span>
+
+<span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;*****use json basic usage*****&#34;</span><span class=p>)</span>
+	<span class=nx>config</span> <span class=o>:=</span> <span class=nx>zap</span><span class=p>.</span><span class=nx>Config</span><span class=p>{</span>
+		<span class=nx>Level</span><span class=p>:</span>            <span class=nx>zap</span><span class=p>.</span><span class=nf>NewAtomicLevelAt</span><span class=p>(</span><span class=nx>zapcore</span><span class=p>.</span><span class=nx>DebugLevel</span><span class=p>),</span> <span class=c1>// 设置日志等级为 DEBUG
+</span><span class=c1></span>		<span class=nx>Encoding</span><span class=p>:</span>         <span class=s>&#34;json&#34;</span><span class=p>,</span>                                   <span class=c1>// 输出方式 json 或 console
+</span><span class=c1></span>		<span class=nx>OutputPaths</span><span class=p>:</span>      <span class=p>[]</span><span class=kt>string</span><span class=p>{</span><span class=s>&#34;stdout&#34;</span><span class=p>},</span>                       <span class=c1>// 输出路径，可以为文件
+</span><span class=c1></span>		<span class=nx>ErrorOutputPaths</span><span class=p>:</span> <span class=p>[]</span><span class=kt>string</span><span class=p>{</span><span class=s>&#34;stderr&#34;</span><span class=p>},</span>                       <span class=c1>// error 日志输出路径
+</span><span class=c1></span>		<span class=nx>EncoderConfig</span><span class=p>:</span> <span class=nx>zapcore</span><span class=p>.</span><span class=nx>EncoderConfig</span><span class=p>{</span>
+			<span class=nx>MessageKey</span><span class=p>:</span>   <span class=s>&#34;msg&#34;</span><span class=p>,</span>                       <span class=c1>// 日志信息 key
+</span><span class=c1></span>			<span class=nx>CallerKey</span><span class=p>:</span>    <span class=s>&#34;line&#34;</span><span class=p>,</span>                      <span class=c1>// 日志行数 key
+</span><span class=c1></span>			<span class=nx>LevelKey</span><span class=p>:</span>     <span class=s>&#34;level&#34;</span><span class=p>,</span>                     <span class=c1>// 日志级别 key
+</span><span class=c1></span>			<span class=nx>EncodeLevel</span><span class=p>:</span>  <span class=nx>zapcore</span><span class=p>.</span><span class=nx>CapitalLevelEncoder</span><span class=p>,</span> <span class=c1>// 日志级别命名，有大写、小写、带颜色输出等
+</span><span class=c1></span>			<span class=nx>EncodeCaller</span><span class=p>:</span> <span class=nx>zapcore</span><span class=p>.</span><span class=nx>ShortCallerEncoder</span><span class=p>,</span>  <span class=c1>// 代码行数信息，全路径、短路径
+</span><span class=c1></span>		<span class=p>},</span>
+	<span class=p>}</span>
+	<span class=nx>logger</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>config</span><span class=p>.</span><span class=nf>Build</span><span class=p>()</span>
+	<span class=nx>logger</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;my info message&#34;</span><span class=p>)</span>
+<span class=p>}</span>
+
+<span class=cm>/*
+</span><span class=cm>output
+</span><span class=cm>*****use json basic usage*****
+</span><span class=cm>{&#34;level&#34;:&#34;INFO&#34;,&#34;line&#34;:&#34;log2/log.go:26&#34;,&#34;msg&#34;:&#34;my info message&#34;}
+</span><span class=cm>*/</span></code></pre></td></tr></table></div></div><p>这是定义了在 <code>json</code> 输出的情况，如果是 <code>console</code> 输出则是：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=cm>/*
+</span><span class=cm>output
+</span><span class=cm>*****use console basic usage*****
+</span><span class=cm>INFO    log2/log.go:26  my info message
+</span><span class=cm>*/</span></code></pre></td></tr></table></div></div><p>基础配置还是比较简单的，如果想要实现日志<strong>压缩/回滚/备份/大小控制</strong>又该怎么配置呢？</p><h3 id=高级用法>高级用法</h3><p>已经有大佬写了日志文件写入相关的 hook 库了<a href=https://github.com/natefinch/lumberjack>lumberjack</a>，我们直接调用就行</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
+
+<span class=kn>import</span> <span class=p>(</span>
+	<span class=s>&#34;os&#34;</span>
+	<span class=s>&#34;time&#34;</span>
+
+	<span class=s>&#34;go.uber.org/zap&#34;</span>
+	<span class=s>&#34;go.uber.org/zap/zapcore&#34;</span>
+	<span class=s>&#34;gopkg.in/natefinch/lumberjack.v2&#34;</span>
+<span class=p>)</span>
+
+<span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+	<span class=nx>logger</span> <span class=o>:=</span> <span class=nf>NewLogger</span><span class=p>(</span><span class=s>&#34;log-test.log&#34;</span><span class=p>,</span> <span class=s>&#34;debug&#34;</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=kc>true</span><span class=p>,</span> <span class=s>&#34;config&#34;</span><span class=p>)</span>
+	<span class=c1>// 模拟 1000000 * 2 行日志
+</span><span class=c1></span>	<span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=mi>1000000</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+		<span class=nx>logger</span><span class=p>.</span><span class=nf>Debug</span><span class=p>(</span><span class=s>&#34;debug log test&#34;</span><span class=p>)</span>
+		<span class=nx>logger</span><span class=p>.</span><span class=nf>Error</span><span class=p>(</span><span class=s>&#34;error log test&#34;</span><span class=p>)</span>
+	<span class=p>}</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=nf>NewLogger</span><span class=p>(</span><span class=nx>filePath</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>level</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>maxSize</span> <span class=kt>int</span><span class=p>,</span> <span class=nx>maxBackups</span> <span class=kt>int</span><span class=p>,</span> <span class=nx>maxAge</span> <span class=kt>int</span><span class=p>,</span> <span class=nx>compress</span> <span class=kt>bool</span><span class=p>,</span> <span class=nx>appName</span> <span class=kt>string</span><span class=p>)</span> <span class=o>*</span><span class=nx>zap</span><span class=p>.</span><span class=nx>Logger</span> <span class=p>{</span>
+	<span class=nx>core</span> <span class=o>:=</span> <span class=nf>newCore</span><span class=p>(</span><span class=nx>filePath</span><span class=p>,</span> <span class=nx>level</span><span class=p>,</span> <span class=nx>maxSize</span><span class=p>,</span> <span class=nx>maxBackups</span><span class=p>,</span> <span class=nx>maxAge</span><span class=p>,</span> <span class=nx>compress</span><span class=p>)</span>
+	<span class=k>return</span> <span class=nx>zap</span><span class=p>.</span><span class=nf>New</span><span class=p>(</span><span class=nx>core</span><span class=p>,</span>
+		<span class=nx>zap</span><span class=p>.</span><span class=nf>AddCaller</span><span class=p>(),</span>
+		<span class=nx>zap</span><span class=p>.</span><span class=nf>AddCallerSkip</span><span class=p>(</span><span class=mi>1</span><span class=p>),</span> <span class=c1>// 跳过1层 caller 调用栈
+</span><span class=c1></span>		<span class=nx>zap</span><span class=p>.</span><span class=nf>Development</span><span class=p>(),</span>
+		<span class=nx>zap</span><span class=p>.</span><span class=nf>Fields</span><span class=p>(</span><span class=nx>zap</span><span class=p>.</span><span class=nf>String</span><span class=p>(</span><span class=s>&#34;appname&#34;</span><span class=p>,</span> <span class=nx>appName</span><span class=p>)),</span> <span class=c1>// 增加 appname 字段
+</span><span class=c1></span>	<span class=p>)</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=nf>newCore</span><span class=p>(</span><span class=nx>filePath</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>level</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>maxSize</span> <span class=kt>int</span><span class=p>,</span> <span class=nx>maxBackups</span> <span class=kt>int</span><span class=p>,</span> <span class=nx>maxAge</span> <span class=kt>int</span><span class=p>,</span> <span class=nx>compress</span> <span class=kt>bool</span><span class=p>)</span> <span class=nx>zapcore</span><span class=p>.</span><span class=nx>Core</span> <span class=p>{</span>
+	<span class=nx>hook</span> <span class=o>:=</span> <span class=nx>lumberjack</span><span class=p>.</span><span class=nx>Logger</span><span class=p>{</span>
+		<span class=nx>Filename</span><span class=p>:</span>   <span class=nx>filePath</span><span class=p>,</span>   <span class=c1>// 日志文件路径
+</span><span class=c1></span>		<span class=nx>MaxSize</span><span class=p>:</span>    <span class=nx>maxSize</span><span class=p>,</span>    <span class=c1>// 每个日志文件保存的最大尺寸 单位：M
+</span><span class=c1></span>		<span class=nx>MaxBackups</span><span class=p>:</span> <span class=nx>maxBackups</span><span class=p>,</span> <span class=c1>// 日志文件最多保存多少个备份
+</span><span class=c1></span>		<span class=nx>MaxAge</span><span class=p>:</span>     <span class=nx>maxAge</span><span class=p>,</span>     <span class=c1>// 文件最多保存多少天
+</span><span class=c1></span>		<span class=nx>Compress</span><span class=p>:</span>   <span class=nx>compress</span><span class=p>,</span>   <span class=c1>// 是否压缩
+</span><span class=c1></span>	<span class=p>}</span>
+	<span class=nx>atomicLevel</span> <span class=o>:=</span> <span class=nx>zap</span><span class=p>.</span><span class=nf>NewAtomicLevel</span><span class=p>()</span>
+	<span class=nx>atomicLevel</span><span class=p>.</span><span class=nf>SetLevel</span><span class=p>(</span><span class=nx>zapcore</span><span class=p>.</span><span class=nx>DebugLevel</span><span class=p>)</span>
+	<span class=nx>encoderConfig</span> <span class=o>:=</span> <span class=nx>zapcore</span><span class=p>.</span><span class=nx>EncoderConfig</span><span class=p>{</span>
+		<span class=nx>TimeKey</span><span class=p>:</span>        <span class=s>&#34;time&#34;</span><span class=p>,</span>
+		<span class=nx>LevelKey</span><span class=p>:</span>       <span class=s>&#34;level&#34;</span><span class=p>,</span>
+		<span class=nx>NameKey</span><span class=p>:</span>        <span class=s>&#34;logger&#34;</span><span class=p>,</span>
+		<span class=nx>CallerKey</span><span class=p>:</span>      <span class=s>&#34;line&#34;</span><span class=p>,</span>
+		<span class=nx>MessageKey</span><span class=p>:</span>     <span class=s>&#34;msg&#34;</span><span class=p>,</span>
+		<span class=nx>StacktraceKey</span><span class=p>:</span>  <span class=s>&#34;stacktrace&#34;</span><span class=p>,</span>
+		<span class=nx>LineEnding</span><span class=p>:</span>     <span class=nx>zapcore</span><span class=p>.</span><span class=nx>DefaultLineEnding</span><span class=p>,</span>
+		<span class=nx>EncodeLevel</span><span class=p>:</span>    <span class=nx>zapcore</span><span class=p>.</span><span class=nx>LowercaseLevelEncoder</span><span class=p>,</span>
+		<span class=nx>EncodeTime</span><span class=p>:</span>     <span class=nx>customTimeEncoder</span><span class=p>,</span>
+		<span class=nx>EncodeDuration</span><span class=p>:</span> <span class=nx>zapcore</span><span class=p>.</span><span class=nx>StringDurationEncoder</span><span class=p>,</span>
+		<span class=nx>EncodeCaller</span><span class=p>:</span>   <span class=nx>zapcore</span><span class=p>.</span><span class=nx>ShortCallerEncoder</span><span class=p>,</span>
+		<span class=nx>EncodeName</span><span class=p>:</span>     <span class=nx>zapcore</span><span class=p>.</span><span class=nx>FullNameEncoder</span><span class=p>,</span>
+	<span class=p>}</span>
+	<span class=k>return</span> <span class=nx>zapcore</span><span class=p>.</span><span class=nf>NewCore</span><span class=p>(</span>
+		<span class=nx>zapcore</span><span class=p>.</span><span class=nf>NewJSONEncoder</span><span class=p>(</span><span class=nx>encoderConfig</span><span class=p>),</span>
+		<span class=c1>// 日志多处输出，此处我们将日志同时输出到 stdout 和 hook 中文件中
+</span><span class=c1></span>		<span class=nx>zapcore</span><span class=p>.</span><span class=nf>NewMultiWriteSyncer</span><span class=p>(</span><span class=nx>zapcore</span><span class=p>.</span><span class=nf>AddSync</span><span class=p>(</span><span class=nx>os</span><span class=p>.</span><span class=nx>Stdout</span><span class=p>),</span> <span class=nx>zapcore</span><span class=p>.</span><span class=nf>AddSync</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>hook</span><span class=p>)),</span>
+		<span class=nx>atomicLevel</span><span class=p>,</span>
+	<span class=p>)</span>
+<span class=p>}</span>
+
+<span class=c1>// 自定义时间格式编码器
+</span><span class=c1></span><span class=kd>func</span> <span class=nf>customTimeEncoder</span><span class=p>(</span><span class=nx>t</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Time</span><span class=p>,</span> <span class=nx>enc</span> <span class=nx>zapcore</span><span class=p>.</span><span class=nx>PrimitiveArrayEncoder</span><span class=p>)</span> <span class=p>{</span>
+	<span class=nx>enc</span><span class=p>.</span><span class=nf>AppendString</span><span class=p>(</span><span class=nx>t</span><span class=p>.</span><span class=nf>Format</span><span class=p>(</span><span class=s>&#34;01-02 15:04:05&#34;</span><span class=p>))</span>
+<span class=p>}</span></code></pre></td></tr></table></div></div><p>这里，我们使用 lumberjack 库，为日志增加了<strong>大小控制</strong>、<strong>自动压缩</strong>、<strong>备份</strong>、<strong>存储时间</strong>等功能。同时在 <code>main</code>函数模拟了多行日志输出，运行结束后查看本地目录，可以看到<code>.log.gz</code>的压缩文件。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></pre></td><td class=lntd><pre class=chroma>➜  log-useage git:(master) ✗ ls -l
+.rw-r--r--  103 fp  9 Jun 14:29 go.mod
+.rw-r--r-- 5.3k fp  9 Jun 14:29 go.sum
+.rw-r--r-- 226k fp 12 Jun 12:27 log-test.log
+.rw-r--r-- 4.2k fp 12 Jun 11:40 log-test-2020-06-12T03-40-18.212.log.gz
+.rw-r--r-- 4.2k fp 12 Jun 11:41 log-test-2020-06-12T03-41-25.973.log.gz
+.rw-r--r-- 4.2k fp 12 Jun 11:41 log-test-2020-06-12T03-41-26.098.log.gz
+.rw-r--r-- 4.2k fp 12 Jun 11:41 log-test-2020-06-12T03-41-26.178.log.gz
+.rw-r--r-- 4.2k fp 12 Jun 11:41 log-test-2020-06-12T03-41-26.416.log.gz
+...</pre></td></tr></table></div></div><p>其中值得一说的是我们使用了 <code>zap.AddCallerSkip</code> 函数，跳过了一层日志输出栈，在项目层级较多时，<code>Caller</code> 输出文件行号时有可能会是当前日志配置文件的行号，此时跳过<code>Caller</code>层级会比较有用。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=c1>// AddCallerSkip increases the number of callers skipped by caller annotation
+</span><span class=c1>// (as enabled by the AddCaller option). When building wrappers around the
+</span><span class=c1>// Logger and SugaredLogger, supplying this Option prevents zap from always
+</span><span class=c1>// reporting the wrapper code as the caller.
+</span><span class=c1></span><span class=kd>func</span> <span class=nf>AddCallerSkip</span><span class=p>(</span><span class=nx>skip</span> <span class=kt>int</span><span class=p>)</span> <span class=nx>Option</span> <span class=p>{</span>
+	<span class=k>return</span> <span class=nf>optionFunc</span><span class=p>(</span><span class=kd>func</span><span class=p>(</span><span class=nx>log</span> <span class=o>*</span><span class=nx>Logger</span><span class=p>)</span> <span class=p>{</span>
+		<span class=nx>log</span><span class=p>.</span><span class=nx>callerSkip</span> <span class=o>+=</span> <span class=nx>skip</span>
+	<span class=p>})</span>
+<span class=p>}</span></code></pre></td></tr></table></div></div><h3 id=总结>总结</h3><p>这篇文章泛泛介绍了 golang 日志库 <code>zap</code>的基本用法和配合<a href=https://github.com/natefinch/lumberjack>lumberjack</a> 实现的高级用法，配置使用也比较简单，正常情况下也足够应付绝大多数场景。</p></div><div class=post-copyright><p class=copyright-item><span class=item-title>文章作者</span>
+<span class=item-content><a href=https://moond4rk.xyz/>moonD4rk</a></span></p><p class=copyright-item><span class=item-title>初次发布</span>
+<span class=item-content>2020-06-12</span></p><p class=copyright-item><span class=item-title>永久链接</span>
+<span class=item-content><a href=https://moond4rk.xyz/post/golang-zap-log-config/>https://moond4rk.xyz/post/golang-zap-log-config/</a></span></p></div><footer class=post-footer><div class=post-tags><a href=/tags/golang/>Golang</a></div><nav class=post-nav><a class=next href=/post/bin-converts-golang/><span class="next-text nav-default">将二进制文件打包进Golang代码中</span>
+<span class="next-text nav-mobile">下一篇</span>
+<i class="iconfont icon-right"></i></a></nav></footer></article></div></div></main><footer id=footer class=footer><div class=social-links><a href=mailto:cranelee13&#43;blog@gmail.com class="iconfont icon-email" title=email></a><a href=https://github.com/moonD4rk class="iconfont icon-github" title=github></a><a href=https://moond4rk.xyz/index.xml type=application/rss+xml class="iconfont icon-rss" title=rss></a></div><div class=copyright><span class=power-by>由 <a class=hexo-link href=https://gohugo.io>Hugo</a> 强力驱动</span>
+<span class=division>|</span>
+<span class=theme-info>主题 -
+<a class=theme-link href=https://github.com/olOwOlo/hugo-theme-even>Even</a></span>
+<span class=copyright-year>&copy;
+2020
+<span class=heart><i class="iconfont icon-heart"></i></span><span class=author>moonD4rk</span></span></div></footer><div class=back-to-top id=back-to-top><i class="iconfont icon-up"></i></div></div><script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script><script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script><script type=text/javascript src=/lib/fancybox/jquery.fancybox-3.1.20.min.js></script><script type=text/javascript src=/lib/timeago/timeago-3.0.2.min.js></script><script type=text/javascript src=/lib/timeago/timeago.locales-3.0.2.min.js></script><script>var languageCode="zh".replace(/-/g,'_').replace(/_(.*)/,function($0,$1){return $0.replace($1,$1.toUpperCase());});timeago().render(document.querySelectorAll('.timeago'),languageCode);timeago.cancel();</script><script type=text/javascript src=/dist/even.26188efa.min.js></script></body></html>
