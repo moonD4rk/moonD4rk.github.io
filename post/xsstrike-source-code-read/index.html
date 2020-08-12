@@ -1,0 +1,415 @@
+<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge,chrome=1"><title>XSStrike 源码阅读 - dark moon</title><meta name=renderer content=webkit><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv=cache-control content=no-transform><meta http-equiv=cache-control content=no-siteapp><meta name=theme-color content=#f8f5ec><meta name=msapplication-navbutton-color content=#f8f5ec><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=#f8f5ec><meta name=author content=moonD4rk><meta name=description content="前言 XSStrike A most advanced XSS scanner. 是一款用于测试 XSS（跨站脚本攻击）的扫描工具，其代码编写简单明了，没有用到很多的 Python 高级特效，比较适合新手阅读学习。其实在中"><meta name=keywords content=xss><meta name=robots content><meta name=generator content="Hugo 0.54.0 with even 4.0.0"><link rel=canonical href=https://moond4rk.xyz/post/xsstrike-source-code-read/><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/manifest.json><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link href=/dist/even.58b28b82.min.css rel=stylesheet><link href=/lib/fancybox/jquery.fancybox-3.1.20.min.css rel=stylesheet><meta property=og:title content="XSStrike 源码阅读"><meta property=og:description content="前言 XSStrike A most advanced XSS scanner. 是一款用于测试 XSS（跨站脚本攻击）的扫描工具，其代码编写简单明了，没有用到很多的 Python 高级特效，比较适合新手阅读学习。其实在中"><meta property=og:type content=article><meta property=og:url content=https://moond4rk.xyz/post/xsstrike-source-code-read/><meta property=article:published_time content=2019-11-12T16:28:31&#43;08:00><meta property=article:modified_time content=2019-11-12T16:28:31&#43;08:00><meta itemprop=name content="XSStrike 源码阅读"><meta itemprop=description content="前言 XSStrike A most advanced XSS scanner. 是一款用于测试 XSS（跨站脚本攻击）的扫描工具，其代码编写简单明了，没有用到很多的 Python 高级特效，比较适合新手阅读学习。其实在中"><meta itemprop=datePublished content=2019-11-12T16:28:31&#43;08:00><meta itemprop=dateModified content=2019-11-12T16:28:31&#43;08:00><meta itemprop=wordCount content=2959><meta itemprop=keywords content=安全,源码阅读,XSS,><meta name=twitter:card content=summary><meta name=twitter:title content="XSStrike 源码阅读"><meta name=twitter:description content="前言 XSStrike A most advanced XSS scanner. 是一款用于测试 XSS（跨站脚本攻击）的扫描工具，其代码编写简单明了，没有用到很多的 Python 高级特效，比较适合新手阅读学习。其实在中"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script><script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]--></head><body><div id=mobile-navbar class=mobile-navbar><div class=mobile-header-logo><a href=/ class=logo>Dark Moon</a></div><div class=mobile-navbar-icon><span></span><span></span><span></span></div></div><nav id=mobile-menu class="mobile-menu slideout-menu"><ul class=mobile-menu-list><a href=/post/><li class=mobile-menu-item>归档</li></a><a href=/tags/><li class=mobile-menu-item>标签</li></a><a href=/categories/><li class=mobile-menu-item>分类</li></a><a href=/about/><li class=mobile-menu-item>关于</li></a></ul></nav><div class=container id=mobile-panel><header id=header class=header><div class=logo-wrapper><a href=/ class=logo>Dark Moon</a></div><nav class=site-navbar><ul id=menu class=menu><li class=menu-item><a class=menu-item-link href=/post/>归档</a></li><li class=menu-item><a class=menu-item-link href=/tags/>标签</a></li><li class=menu-item><a class=menu-item-link href=/categories/>分类</a></li><li class=menu-item><a class=menu-item-link href=/about/>关于</a></li></ul></nav></header><main id=main class=main><div class=content-wrapper><div id=content class=content><article class=post><header class=post-header><h1 class=post-title>XSStrike 源码阅读</h1><div class=post-meta><span class=post-time>2019-11-12</span><div class=post-category><a href=/categories/%E6%8A%80%E6%9C%AF/>技术</a></div></div></header><div class=post-content><h2 id=前言>前言</h2><blockquote><p><a href=https://github.com/s0md3v/XSStrike>XSStrike</a> A most advanced XSS scanner. 是一款用于测试 XSS（跨站脚本攻击）的扫描工具，其代码编写简单明了，没有用到很多的 Python 高级特效，比较适合新手阅读学习。其实在中文互联网上已有很多优秀的分析文章<sup class=footnote-ref id=fnref:0><a href=#fn:0>1</a></sup>，还写这篇文章一是为了加强自身记忆，二是 XSStrike 在不断的迭代过程中代码已较以前版本有很大不同，虽然整体架构不变，但细节有所不同，故有此文。</p></blockquote><table><thead><tr><th>Python 版本</th><th align=center>XSStrike 版本</th><th align=right>编码规范</th></tr></thead><tbody><tr><td>Python &gt; 3.4</td><td align=center>XSStrike v3.1.4</td><td align=right>PEP 8</td></tr></tbody></table><h2 id=项目配置>项目配置</h2><p><code>core/config.py</code> 文件中的一些关键参数</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=n>globalVariables</span> <span class=o>=</span> <span class=p>{}</span>
+
+<span class=n>xsschecker</span> <span class=o>=</span> <span class=s1>&#39;v3dm0s&#39;</span>
+
+<span class=c1># attributes that have special properties</span>
+<span class=n>specialAttributes</span> <span class=o>=</span> <span class=p>[</span><span class=s1>&#39;srcdoc&#39;</span><span class=p>,</span> <span class=s1>&#39;src&#39;</span><span class=p>]</span>
+
+<span class=n>badTags</span> <span class=o>=</span> <span class=p>(</span><span class=s1>&#39;iframe&#39;</span><span class=p>,</span> <span class=s1>&#39;title&#39;</span><span class=p>,</span> <span class=s1>&#39;textarea&#39;</span><span class=p>,</span> <span class=s1>&#39;noembed&#39;</span><span class=p>,</span>
+           <span class=s1>&#39;style&#39;</span><span class=p>,</span> <span class=s1>&#39;template&#39;</span><span class=p>,</span> <span class=s1>&#39;noscript&#39;</span><span class=p>)</span>
+
+<span class=n>tags</span> <span class=o>=</span> <span class=p>(</span><span class=s1>&#39;html&#39;</span><span class=p>,</span> <span class=s1>&#39;d3v&#39;</span><span class=p>,</span> <span class=s1>&#39;a&#39;</span><span class=p>,</span> <span class=s1>&#39;details&#39;</span><span class=p>)</span></code></pre></td></tr></table></div></div><p>其中 <code>globalVariables</code> 以 Key-value 的方式用来存放全局变量，主要是一些项目配置。<code>xsschecker</code> 是一随机字符串，用来测试输出位置。<code>config.py</code> 中定义的其他参数主要是用来绕过 <code>waf</code> 和生成 <code>payload</code>。</p><h2 id=程序入口>程序入口</h2><p><code>xsstrike.py 部分代码</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=n>core</span><span class=o>.</span><span class=n>config</span><span class=o>.</span><span class=n>globalVariables</span> <span class=o>=</span> <span class=nb>vars</span><span class=p>(</span><span class=n>args</span><span class=p>)</span>
+
+<span class=o>...</span>
+<span class=c1># 格式化请求 header</span>
+<span class=k>if</span> <span class=nb>type</span><span class=p>(</span><span class=n>args</span><span class=o>.</span><span class=n>add_headers</span><span class=p>)</span> <span class=o>==</span> <span class=nb>bool</span><span class=p>:</span>
+    <span class=n>headers</span> <span class=o>=</span> <span class=n>extractHeaders</span><span class=p>(</span><span class=n>prompt</span><span class=p>())</span>
+<span class=k>elif</span> <span class=nb>type</span><span class=p>(</span><span class=n>args</span><span class=o>.</span><span class=n>add_headers</span><span class=p>)</span> <span class=o>==</span> <span class=nb>str</span><span class=p>:</span>
+    <span class=n>headers</span> <span class=o>=</span> <span class=n>extractHeaders</span><span class=p>(</span><span class=n>args</span><span class=o>.</span><span class=n>add_headers</span><span class=p>)</span>
+<span class=k>else</span><span class=p>:</span>
+    <span class=kn>from</span> <span class=nn>core.config</span> <span class=kn>import</span> <span class=n>headers</span>
+
+<span class=c1># 将格式化后的数据存入 globalVariables</span>
+<span class=n>core</span><span class=o>.</span><span class=n>config</span><span class=o>.</span><span class=n>globalVariables</span><span class=p>[</span><span class=s1>&#39;headers&#39;</span><span class=p>]</span> <span class=o>=</span> <span class=n>headers</span>
+
+<span class=o>...</span>
+
+<span class=k>if</span> <span class=n>path</span><span class=p>:</span>
+    <span class=n>paramData</span> <span class=o>=</span> <span class=n>converter</span><span class=p>(</span><span class=n>target</span><span class=p>,</span> <span class=n>target</span><span class=p>)</span>
+<span class=k>elif</span> <span class=n>jsonData</span><span class=p>:</span>
+    <span class=n>headers</span><span class=p>[</span><span class=s1>&#39;Content-type&#39;</span><span class=p>]</span> <span class=o>=</span> <span class=s1>&#39;application/json&#39;</span>
+    <span class=n>paramData</span> <span class=o>=</span> <span class=n>converter</span><span class=p>(</span><span class=n>paramData</span><span class=p>)</span>
+    
+<span class=o>...</span> 
+
+<span class=c1># 从远程仓库检查是否需要更新</span>
+<span class=k>if</span> <span class=n>update</span><span class=p>:</span>  <span class=c1># if the user has supplied --update argument</span>
+    <span class=n>updater</span><span class=p>()</span>
+    <span class=n>quit</span><span class=p>()</span>  <span class=c1># quitting because files have been changed</span>
+
+    </code></pre></td></tr></table></div></div><p>此文件程序运行入口，运行时会先检测第三方包和 Python 版本，低于 3.4 无法运行。命令行参数解析后会将参数存入 <code>globalVariables</code> 变量。接着会初始化 <code>header</code> 和其他参数，这里着重说一下用来格式化的 <code>converter</code> 函数。</p><p><code>core/utils.py</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=k>def</span> <span class=nf>converter</span><span class=p>(</span><span class=n>data</span><span class=p>,</span> <span class=n>url</span><span class=o>=</span><span class=bp>False</span><span class=p>):</span>
+    <span class=k>if</span> <span class=s1>&#39;str&#39;</span> <span class=ow>in</span> <span class=nb>str</span><span class=p>(</span><span class=nb>type</span><span class=p>(</span><span class=n>data</span><span class=p>)):</span>
+        <span class=k>if</span> <span class=n>url</span><span class=p>:</span>
+            <span class=n>dictized</span> <span class=o>=</span> <span class=p>{}</span>
+            <span class=n>parts</span> <span class=o>=</span> <span class=n>data</span><span class=o>.</span><span class=n>split</span><span class=p>(</span><span class=s1>&#39;/&#39;</span><span class=p>)[</span><span class=mi>3</span><span class=p>:]</span>
+            <span class=k>for</span> <span class=n>part</span> <span class=ow>in</span> <span class=n>parts</span><span class=p>:</span>
+                <span class=n>dictized</span><span class=p>[</span><span class=n>part</span><span class=p>]</span> <span class=o>=</span> <span class=n>part</span>
+            <span class=k>return</span> <span class=n>dictized</span>
+        <span class=k>else</span><span class=p>:</span>
+            <span class=k>return</span> <span class=n>json</span><span class=o>.</span><span class=n>loads</span><span class=p>(</span><span class=n>data</span><span class=p>)</span>
+    <span class=k>else</span><span class=p>:</span>
+        <span class=k>if</span> <span class=n>url</span><span class=p>:</span>
+            <span class=n>url</span> <span class=o>=</span> <span class=n>urlparse</span><span class=p>(</span><span class=n>url</span><span class=p>)</span><span class=o>.</span><span class=n>scheme</span> <span class=o>+</span> <span class=s1>&#39;://&#39;</span> <span class=o>+</span> <span class=n>urlparse</span><span class=p>(</span><span class=n>url</span><span class=p>)</span><span class=o>.</span><span class=n>netloc</span>
+            <span class=k>for</span> <span class=n>part</span> <span class=ow>in</span> <span class=nb>list</span><span class=p>(</span><span class=n>data</span><span class=o>.</span><span class=n>values</span><span class=p>()):</span>
+                <span class=n>url</span> <span class=o>+=</span> <span class=s1>&#39;/&#39;</span> <span class=o>+</span> <span class=n>part</span>
+            <span class=k>return</span> <span class=n>url</span>
+        <span class=k>else</span><span class=p>:</span>
+            <span class=k>return</span> <span class=n>json</span><span class=o>.</span><span class=n>dumps</span><span class=p>(</span><span class=n>data</span><span class=p>)</span>
+ 
+
+<span class=c1># xsstrike.py </span>
+<span class=k>if</span> <span class=n>path</span><span class=p>:</span>
+    <span class=n>paramData</span> <span class=o>=</span> <span class=n>converter</span><span class=p>(</span><span class=n>target</span><span class=p>,</span> <span class=n>target</span><span class=p>)</span>
+<span class=k>elif</span> <span class=n>jsonData</span><span class=p>:</span>
+    <span class=n>headers</span><span class=p>[</span><span class=s1>&#39;Content-type&#39;</span><span class=p>]</span> <span class=o>=</span> <span class=s1>&#39;application/json&#39;</span>
+    <span class=n>paramData</span> <span class=o>=</span> <span class=n>converter</span><span class=p>(</span><span class=n>paramData</span><span class=p>)</span></code></pre></td></tr></table></div></div><p>如果注入点在 path，加入 <code>target=&quot;https://www.baidu.com/a/b/c&quot;</code>，经过 <code>converter(target, target)</code>后输出为 <code>{'a': 'a', 'b': 'b', 'c': 'c'}</code> ，当注入点为 json，此时 paramData 为 POST 请求 json 类型 data， <code>paramData = converter(paramData)</code> 输出为 json 反序列化后的对象。</p><p>此时已基本初始化完成，接下来按照需求进入扫描阶段</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=c1># 如果需要模糊测试</span>
+<span class=k>if</span> <span class=n>fuzz</span><span class=p>:</span>
+    <span class=n>singleFuzz</span><span class=p>(</span><span class=n>target</span><span class=p>,</span> <span class=n>paramData</span><span class=p>,</span> <span class=n>encoding</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>)</span>
+<span class=c1># 如果不需要爬虫功能</span>
+<span class=k>elif</span> <span class=ow>not</span> <span class=n>recursive</span> <span class=ow>and</span> <span class=ow>not</span> <span class=n>args_seeds</span><span class=p>:</span>
+  	<span class=c1># 如果需要从文件读取 payload</span>
+    <span class=k>if</span> <span class=n>args_file</span><span class=p>:</span>
+        <span class=n>bruteforcer</span><span class=p>(</span><span class=n>target</span><span class=p>,</span> <span class=n>paramData</span><span class=p>,</span> <span class=n>payloadList</span><span class=p>,</span> <span class=n>encoding</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>)</span>
+    <span class=c1># 或者使用默认 payload，payload 列表在 core/utils.py 文件中</span>
+    <span class=k>else</span><span class=p>:</span>
+        <span class=n>scan</span><span class=p>(</span><span class=n>target</span><span class=p>,</span> <span class=n>paramData</span><span class=p>,</span> <span class=n>encoding</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>,</span> <span class=n>skipDOM</span><span class=p>,</span> <span class=n>find</span><span class=p>,</span> <span class=n>skip</span><span class=p>)</span></code></pre></td></tr></table></div></div><h2 id=单独模糊测试>单独模糊测试</h2><p>此模块只用来单独的模糊测试，用来判断是否有 WAF 和获取更多 WAF 信息。</p><p><code>modes/singleFuzz.py</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=k>def</span> <span class=nf>singleFuzz</span><span class=p>(</span><span class=n>target</span><span class=p>,</span> <span class=n>paramData</span><span class=p>,</span> <span class=n>encoding</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>):</span>
+    <span class=s2>&#34;&#34;&#34;
+</span><span class=s2>    :param target: url, https://www.baidu.com/a/b/c?p1=1&amp;p2=2
+</span><span class=s2>    :param paramData: 请求参数，可能已通过命令行参数格式化，也可能只为一普通 url,如上
+</span><span class=s2>    :param encoding: 是否需要 encode，默认为 base64
+</span><span class=s2>    :param headers: http 请求头
+</span><span class=s2>    :param delay: 请求延迟，从命令行参数中得到
+</span><span class=s2>    :param timeout: 请求超时时间，从命令行参数中得到
+</span><span class=s2>    :return: 无返回，在 cmd 会打印是否有 waf 和 fuzz 结果
+</span><span class=s2>    &#34;&#34;&#34;</span>
+	<span class=o>...</span>
+  <span class=c1># getParams 函数通过格式化 paramData, 返回 dict</span>
+  <span class=n>params</span> <span class=o>=</span> <span class=n>getParams</span><span class=p>(</span><span class=n>target</span><span class=p>,</span> <span class=n>paramData</span><span class=p>,</span> <span class=n>GET</span><span class=p>)</span>
+  <span class=o>...</span>
+  <span class=n>WAF</span> <span class=o>=</span> <span class=n>wafDetector</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=p>{</span><span class=nb>list</span><span class=p>(</span><span class=n>params</span><span class=o>.</span><span class=n>keys</span><span class=p>())[</span><span class=mi>0</span><span class=p>]:</span> <span class=n>xsschecker</span><span class=p>},</span> <span class=n>headers</span><span class=p>,</span> <span class=n>GET</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>)</span>
+  <span class=o>...</span>
+  <span class=k>for</span> <span class=n>paramName</span> <span class=ow>in</span> <span class=n>params</span><span class=o>.</span><span class=n>keys</span><span class=p>():</span>
+      <span class=n>paramsCopy</span> <span class=o>=</span> <span class=n>copy</span><span class=o>.</span><span class=n>deepcopy</span><span class=p>(</span><span class=n>params</span><span class=p>)</span>
+      <span class=n>paramsCopy</span><span class=p>[</span><span class=n>paramName</span><span class=p>]</span> <span class=o>=</span> <span class=n>xsschecker</span>
+      <span class=n>fuzzer</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>paramsCopy</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>GET</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>,</span> <span class=n>WAF</span><span class=p>,</span> <span class=n>encoding</span><span class=p>)</span></code></pre></td></tr></table></div></div><p>fuzz 函数功能主要有两个，一是通过 waf 指纹判断网站是否有waf，另一个是尝试用不同 Payload 测试获取更多信息。</p><h3 id=检测-waf>检测 waf</h3><p><code>core/wafDetector.py</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=k>def</span> <span class=nf>wafDetector</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>params</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>GET</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>):</span>
+  
+  	<span class=c1># 读取 waf 指纹并反序列化</span>
+    <span class=k>with</span> <span class=nb>open</span><span class=p>(</span><span class=n>sys</span><span class=o>.</span><span class=n>path</span><span class=p>[</span><span class=mi>0</span><span class=p>]</span> <span class=o>+</span> <span class=s1>&#39;/db/wafSignatures.json&#39;</span><span class=p>,</span> <span class=s1>&#39;r&#39;</span><span class=p>)</span> <span class=k>as</span> <span class=nb>file</span><span class=p>:</span>
+        <span class=n>wafSignatures</span> <span class=o>=</span> <span class=n>json</span><span class=o>.</span><span class=n>load</span><span class=p>(</span><span class=nb>file</span><span class=p>)</span>
+    <span class=c1># waf 指纹样例</span>
+    <span class=s2>&#34;&#34;&#34;
+</span><span class=s2>    {
+</span><span class=s2>        &#34;360 Web Application Firewall (360)&#34;: {
+</span><span class=s2>            &#34;code&#34;: &#34;493&#34;,
+</span><span class=s2>            &#34;page&#34;: &#34;/wzws-waf-cgi/&#34;,
+</span><span class=s2>            &#34;headers&#34;: &#34;X-Powered-By-360wzb&#34;
+</span><span class=s2>        },
+</span><span class=s2>    ...
+</span><span class=s2>    }
+</span><span class=s2>    &#34;&#34;&#34;</span>
+    
+    <span class=n>noise</span> <span class=o>=</span> <span class=s1>&#39;&lt;script&gt;alert(&#34;XSS&#34;)&lt;/script&gt;&#39;</span>
+    <span class=n>params</span><span class=p>[</span><span class=s1>&#39;xss&#39;</span><span class=p>]</span> <span class=o>=</span> <span class=n>noise</span>
+    <span class=c1># 带肯定能触发 waf 的恶意参数请求 URL</span>
+    <span class=n>response</span> <span class=o>=</span> <span class=n>requester</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>params</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>GET</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>)</span>
+    <span class=k>for</span> <span class=n>wafName</span><span class=p>,</span> <span class=n>wafSignature</span> <span class=ow>in</span> <span class=n>wafSignatures</span><span class=o>.</span><span class=n>items</span><span class=p>():</span>
+        <span class=n>score</span> <span class=o>=</span> <span class=mi>0</span>
+        <span class=k>if</span> <span class=n>pageSign</span><span class=p>:</span>
+            <span class=k>if</span> <span class=n>re</span><span class=o>.</span><span class=n>search</span><span class=p>(</span><span class=n>pageSign</span><span class=p>,</span> <span class=n>page</span><span class=p>,</span> <span class=n>re</span><span class=o>.</span><span class=n>I</span><span class=p>):</span>
+              	<span class=c1># 通过正则匹配计分</span>
+                <span class=n>score</span> <span class=o>+=</span> <span class=mi>1</span>
+        <span class=o>...</span></code></pre></td></tr></table></div></div><p>判断是否有 waf 时，通过带恶意参数的请求判断返回的页面是否和 waf 特征正则匹配 <code>if re.search(pageSign, page, re.I):</code> 其中 page 和 headers 匹配成功为1分，http 状态码匹配成功为 0.5 分。</p><p><em>注释: re.I 为忽视大小写</em></p><h3 id=获取更多信息>获取更多信息</h3><p><code>core/fuzzer.py</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=n>fuzzes</span> <span class=o>=</span> <span class=p>(</span>  <span class=c1># Fuzz strings to test WAFs</span>
+    <span class=s1>&#39;&lt;test&#39;</span><span class=p>,</span> <span class=s1>&#39;&lt;test//&#39;</span><span class=p>,</span> <span class=s1>&#39;&lt;test&gt;&#39;</span><span class=p>,</span> <span class=s1>&#39;&lt;test x&gt;&#39;</span><span class=p>,</span> <span class=o>...</span><span class=p>)</span>
+
+<span class=k>def</span> <span class=nf>fuzzer</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>params</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>GET</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>,</span> <span class=n>WAF</span><span class=p>,</span> <span class=n>encoding</span><span class=p>):</span>
+    <span class=k>for</span> <span class=n>fuzz</span> <span class=ow>in</span> <span class=n>fuzzes</span><span class=p>:</span>
+        <span class=o>...</span>
+        <span class=n>data</span> <span class=o>=</span> <span class=n>replaceValue</span><span class=p>(</span><span class=n>params</span><span class=p>,</span> <span class=n>xsschecker</span><span class=p>,</span> <span class=n>fuzz</span><span class=p>,</span> <span class=n>copy</span><span class=o>.</span><span class=n>deepcopy</span><span class=p>)</span>
+        <span class=n>response</span> <span class=o>=</span> <span class=n>requester</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>data</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>GET</span><span class=p>,</span> <span class=n>delay</span><span class=o>/</span><span class=mi>2</span><span class=p>,</span> <span class=n>timeout</span><span class=p>)</span>
+        <span class=c1># 此时会根据请求打印相应日志，并sleep不同秒数再发请求，防止被 WAF ban</span>
+        <span class=o>...</span> 
+        <span class=k>if</span> <span class=n>fuzz</span><span class=o>.</span><span class=n>lower</span><span class=p>()</span> <span class=ow>in</span> <span class=n>response</span><span class=o>.</span><span class=n>text</span><span class=o>.</span><span class=n>lower</span><span class=p>():</span>
+            <span class=n>result</span> <span class=o>=</span> <span class=p>(</span><span class=s1>&#39;</span><span class=si>%s</span><span class=s1>[passed]  </span><span class=si>%s</span><span class=s1>&#39;</span> <span class=o>%</span> <span class=p>(</span><span class=n>green</span><span class=p>,</span> <span class=n>end</span><span class=p>))</span>
+        <span class=c1># if the server returned an error (Maybe WAF blocked it)</span>
+        <span class=k>elif</span> <span class=nb>str</span><span class=p>(</span><span class=n>response</span><span class=o>.</span><span class=n>status_code</span><span class=p>)[:</span><span class=mi>1</span><span class=p>]</span> <span class=o>!=</span> <span class=s1>&#39;2&#39;</span><span class=p>:</span>
+            <span class=n>result</span> <span class=o>=</span> <span class=p>(</span><span class=s1>&#39;</span><span class=si>%s</span><span class=s1>[blocked] </span><span class=si>%s</span><span class=s1>&#39;</span> <span class=o>%</span> <span class=p>(</span><span class=n>red</span><span class=p>,</span> <span class=n>end</span><span class=p>))</span>
+        <span class=k>else</span><span class=p>:</span>  <span class=c1># if the fuzz string was not reflected in the response completely</span>
+            <span class=n>result</span> <span class=o>=</span> <span class=p>(</span><span class=s1>&#39;</span><span class=si>%s</span><span class=s1>[filtered]</span><span class=si>%s</span><span class=s1>&#39;</span> <span class=o>%</span> <span class=p>(</span><span class=n>yellow</span><span class=p>,</span> <span class=n>end</span><span class=p>))</span>
+        <span class=n>logger</span><span class=o>.</span><span class=n>info</span><span class=p>(</span><span class=s1>&#39;</span><span class=si>%s</span><span class=s1> </span><span class=si>%s</span><span class=s1>&#39;</span> <span class=o>%</span> <span class=p>(</span><span class=n>result</span><span class=p>,</span> <span class=n>fuzz</span><span class=p>))</span>
+
+    </code></pre></td></tr></table></div></div><p>遍历 fuzzes 列表，通过 <code>replaceValue</code> 函数将 xsschecker 换成 fuzz payload 去请求：如果 fuzz 字符串在 response.text 里，则表示 fuzz 通过；如果返回 http 状态码不为 2XX，则表明被 WAF blocked；其他情况为需要手工测试，到此时，fuzz部分已结束。</p><p>*注释: replaceValue 函数替换 value 时用到了 <strong>深拷贝<sup class=footnote-ref id=fnref:1><a href=#fn:1>2</a></sup></strong>防止错误*</p><h2 id=暴力测试模块>暴力测试模块</h2><p><code>bruteforcer.py</code> 此模块直接加载 payload list，遍历每个参数去请求。</p><h2 id=扫描模块>扫描模块</h2><p>此模块为 xss 主要扫描模块</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=k>def</span> <span class=nf>scan</span><span class=p>(</span><span class=n>target</span><span class=p>,</span> <span class=n>paramData</span><span class=p>,</span> <span class=n>encoding</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>,</span> <span class=n>skipDOM</span><span class=p>,</span> <span class=n>find</span><span class=p>,</span> <span class=n>skip</span><span class=p>):</span>
+		<span class=s2>&#34;&#34;&#34;
+</span><span class=s2>	  :param skipDOM: 是否跳过Dom XSS检测
+</span><span class=s2>    :param find: 是否自动查找注入参数
+</span><span class=s2>    :param skip: 是否继续
+</span><span class=s2>		&#34;&#34;&#34;</span>
+    <span class=k>if</span> <span class=ow>not</span> <span class=n>skipDOM</span><span class=p>:</span>
+        <span class=n>logger</span><span class=o>.</span><span class=n>run</span><span class=p>(</span><span class=s1>&#39;Checking for DOM vulnerabilities&#39;</span><span class=p>)</span>
+        <span class=n>highlighted</span> <span class=o>=</span> <span class=n>dom</span><span class=p>(</span><span class=n>response</span><span class=p>)</span>	
+
+  </code></pre></td></tr></table></div></div><h3 id=dom-xss检测>Dom XSS检测</h3><p>在最新的 XSStrike 中，移除了原先的 Selnium 模块，Dom XSS 只进行静态检测。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=k>def</span> <span class=nf>dom</span><span class=p>(</span><span class=n>response</span><span class=p>):</span>
+    <span class=n>highlighted</span> <span class=o>=</span> <span class=p>[]</span>
+    <span class=n>sources</span> <span class=o>=</span> <span class=sa>r</span><span class=s1>&#39;&#39;&#39;document\.(URL|documentURI|URLUnencoded|baseURI|cookie|referrer)|location\.(href|search|hash|pathname)|window\.name|history\.(pushState|replaceState)(local|session)Storage&#39;&#39;&#39;</span>
+    <span class=n>sinks</span> <span class=o>=</span> <span class=sa>r</span><span class=s1>&#39;&#39;&#39;eval|evaluate|execCommand|assign|navigate|getResponseHeaderopen|showModalDialog|Function|set(Timeout|Interval|Immediate)|execScript|crypto.generateCRMFRequest|ScriptElement\.(src|text|textContent|innerText)|.*?\.onEventName|document\.(write|writeln)|.*?\.innerHTML|Range\.createContextualFragment|(document|window)\.location&#39;&#39;&#39;</span>
+    <span class=n>scripts</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>findall</span><span class=p>(</span><span class=sa>r</span><span class=s1>&#39;(?i)(?s)&lt;script[^&gt;]*&gt;(.*?)&lt;/script&gt;&#39;</span><span class=p>,</span> <span class=n>response</span><span class=p>)</span>
+   	<span class=k>for</span> <span class=n>script</span> <span class=ow>in</span> <span class=n>scripts</span><span class=p>:</span> 
+   </code></pre></td></tr></table></div></div><p>此处会先通过正则匹配所有 <code>&lt;script&gt;</code>标签，以 DVWA 中 DomXSS 测试页面为例，匹配后结果为</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-html data-lang=html><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-html data-lang=html><span class=p>&lt;</span><span class=nt>script</span><span class=p>&gt;</span>
+					<span class=k>if</span> <span class=p>(</span><span class=nb>document</span><span class=p>.</span><span class=nx>location</span><span class=p>.</span><span class=nx>href</span><span class=p>.</span><span class=nx>indexOf</span><span class=p>(</span><span class=s2>&#34;default=&#34;</span><span class=p>)</span> <span class=o>&gt;=</span> <span class=mi>0</span><span class=p>)</span> <span class=p>{</span>
+						<span class=kd>var</span> <span class=nx>lang</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>location</span><span class=p>.</span><span class=nx>href</span><span class=p>.</span><span class=nx>substring</span><span class=p>(</span><span class=nb>document</span><span class=p>.</span><span class=nx>location</span><span class=p>.</span><span class=nx>href</span><span class=p>.</span><span class=nx>indexOf</span><span class=p>(</span><span class=s2>&#34;default=&#34;</span><span class=p>)</span><span class=o>+</span><span class=mi>8</span><span class=p>);</span>
+						<span class=nb>document</span><span class=p>.</span><span class=nx>write</span><span class=p>(</span><span class=s2>&#34;&lt;option value=&#39;&#34;</span> <span class=o>+</span> <span class=nx>lang</span> <span class=o>+</span> <span class=s2>&#34;&#39;&gt;&#34;</span> <span class=o>+</span> <span class=nb>decodeURI</span><span class=p>(</span><span class=nx>lang</span><span class=p>)</span> <span class=o>+</span> <span class=s2>&#34;&lt;/option&gt;&#34;</span><span class=p>);</span>
+						<span class=nb>document</span><span class=p>.</span><span class=nx>write</span><span class=p>(</span><span class=s2>&#34;&lt;option value=&#39;&#39; disabled=&#39;disabled&#39;&gt;----&lt;/option&gt;&#34;</span><span class=p>);</span>
+					<span class=p>}</span>
+					    
+					<span class=nb>document</span><span class=p>.</span><span class=nx>write</span><span class=p>(</span><span class=s2>&#34;&lt;option value=&#39;English&#39;&gt;English&lt;/option&gt;&#34;</span><span class=p>);</span>
+					<span class=nb>document</span><span class=p>.</span><span class=nx>write</span><span class=p>(</span><span class=s2>&#34;&lt;option value=&#39;French&#39;&gt;French&lt;/option&gt;&#34;</span><span class=p>);</span>
+					<span class=nb>document</span><span class=p>.</span><span class=nx>write</span><span class=p>(</span><span class=s2>&#34;&lt;option value=&#39;Spanish&#39;&gt;Spanish&lt;/option&gt;&#34;</span><span class=p>);</span>
+					<span class=nb>document</span><span class=p>.</span><span class=nx>write</span><span class=p>(</span><span class=s2>&#34;&lt;option value=&#39;German&#39;&gt;German&lt;/option&gt;&#34;</span><span class=p>);</span>
+				<span class=p>&lt;/</span><span class=nt>script</span><span class=p>&gt;</span></code></pre></td></tr></table></div></div><h3 id=反射型xss扫描>反射型XSS扫描</h3><h4 id=自动查找注入参数>自动查找注入参数</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python>    <span class=k>if</span> <span class=n>find</span><span class=p>:</span>
+        <span class=n>params</span> <span class=o>=</span> <span class=n>arjun</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>GET</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>)</span></code></pre></td></tr></table></div></div><p><a href=https://github.com/s0md3v/Arjun>arjun</a> 是用来发现请求中的有效参数</p><h4 id=检测-waf-1>检测 WAF</h4><p>检测 <code>waf</code>手段和fuzz模块时一样</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=n>WAF</span> <span class=o>=</span> <span class=n>wafDetector</span><span class=p>(</span>
+        <span class=n>url</span><span class=p>,</span> <span class=p>{</span><span class=nb>list</span><span class=p>(</span><span class=n>params</span><span class=o>.</span><span class=n>keys</span><span class=p>())[</span><span class=mi>0</span><span class=p>]:</span> <span class=n>xsschecker</span><span class=p>},</span> <span class=n>headers</span><span class=p>,</span> <span class=n>GET</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>)</span>
+    <span class=k>if</span> <span class=n>WAF</span><span class=p>:</span>
+        <span class=n>logger</span><span class=o>.</span><span class=n>error</span><span class=p>(</span><span class=s1>&#39;WAF detected: </span><span class=si>%s%s%s</span><span class=s1>&#39;</span> <span class=o>%</span> <span class=p>(</span><span class=n>green</span><span class=p>,</span> <span class=n>WAF</span><span class=p>,</span> <span class=n>end</span><span class=p>))</span>
+    <span class=k>else</span><span class=p>:</span>
+        <span class=n>logger</span><span class=o>.</span><span class=n>good</span><span class=p>(</span><span class=s1>&#39;WAF Status: </span><span class=si>%s</span><span class=s1>Offline</span><span class=si>%s</span><span class=s1>&#39;</span> <span class=o>%</span> <span class=p>(</span><span class=n>green</span><span class=p>,</span> <span class=n>end</span><span class=p>))</span></code></pre></td></tr></table></div></div><h4 id=将参数value替换为随机变量>将参数Value替换为随机变量</h4><p>遍历参数，将 <code>value</code> 替换为随机字符串</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python>    <span class=k>for</span> <span class=n>paramName</span> <span class=ow>in</span> <span class=n>params</span><span class=o>.</span><span class=n>keys</span><span class=p>():</span>
+        <span class=n>paramsCopy</span> <span class=o>=</span> <span class=n>copy</span><span class=o>.</span><span class=n>deepcopy</span><span class=p>(</span><span class=n>params</span><span class=p>)</span>
+        <span class=n>logger</span><span class=o>.</span><span class=n>info</span><span class=p>(</span><span class=s1>&#39;Testing parameter: </span><span class=si>%s</span><span class=s1>&#39;</span> <span class=o>%</span> <span class=n>paramName</span><span class=p>)</span>
+        <span class=k>if</span> <span class=n>encoding</span><span class=p>:</span>
+            <span class=n>paramsCopy</span><span class=p>[</span><span class=n>paramName</span><span class=p>]</span> <span class=o>=</span> <span class=n>encoding</span><span class=p>(</span><span class=n>xsschecker</span><span class=p>)</span>
+        <span class=k>else</span><span class=p>:</span>
+            <span class=n>paramsCopy</span><span class=p>[</span><span class=n>paramName</span><span class=p>]</span> <span class=o>=</span> <span class=n>xsschecker</span>
+        <span class=n>response</span> <span class=o>=</span> <span class=n>requester</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>paramsCopy</span><span class=p>,</span> <span class=n>headers</span><span class=p>,</span> <span class=n>GET</span><span class=p>,</span> <span class=n>delay</span><span class=p>,</span> <span class=n>timeout</span><span class=p>)</span></code></pre></td></tr></table></div></div><h4 id=解析扫描结果>解析扫描结果</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=n>occurences</span> <span class=o>=</span> <span class=n>htmlParser</span><span class=p>(</span><span class=n>response</span><span class=p>,</span> <span class=n>encoding</span><span class=p>)</span></code></pre></td></tr></table></div></div><p><code>htmlParser.py</code></p><ol><li>从请求中移除所有注释</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python>   <span class=n>clean_response</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>sub</span><span class=p>(</span><span class=sa>r</span><span class=s1>&#39;&lt;!--[.\s\S]*?--&gt;&#39;</span><span class=p>,</span> <span class=s1>&#39;&#39;</span><span class=p>,</span> <span class=n>response</span><span class=p>)</span></code></pre></td></tr></table></div></div><ol><li>找到特殊符号<code>xsschecker</code> 在页面中出现的位置</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python>   <span class=n>occurence</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>search</span><span class=p>(</span><span class=sa>r</span><span class=s1>&#39;(?i)(?s)&lt;script[^&gt;]*&gt;.*?(</span><span class=si>%s</span><span class=s1>).*?&lt;/script&gt;&#39;</span> <span class=o>%</span> <span class=n>xsschecker</span><span class=p>,</span> <span class=n>script_checkable</span><span class=p>)</span>
+       <span class=k>if</span> <span class=n>occurence</span><span class=p>:</span>
+           <span class=n>thisPosition</span> <span class=o>=</span> <span class=n>occurence</span><span class=o>.</span><span class=n>start</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+           <span class=n>position_and_context</span><span class=p>[</span><span class=n>thisPosition</span><span class=p>]</span> <span class=o>=</span> <span class=s1>&#39;script&#39;</span>
+           <span class=n>environment_details</span><span class=p>[</span><span class=n>thisPosition</span><span class=p>]</span> <span class=o>=</span> <span class=p>{}</span>
+           <span class=n>environment_details</span><span class=p>[</span><span class=n>thisPosition</span><span class=p>][</span><span class=s1>&#39;details&#39;</span><span class=p>]</span> <span class=o>=</span> <span class=p>{</span><span class=s1>&#39;quote&#39;</span><span class=p>:</span> <span class=s1>&#39;&#39;</span><span class=p>}</span>
+           <span class=k>print</span><span class=p>(</span><span class=s2>&#34;position_and_context&#34;</span><span class=p>,</span> <span class=n>position_and_context</span><span class=p>)</span>
+           <span class=k>print</span><span class=p>(</span><span class=s2>&#34;environment_details&#34;</span><span class=p>,</span> <span class=n>environment_details</span><span class=p>)</span>
+         
+   <span class=o>&gt;&gt;&gt;</span> <span class=err>输出：</span>
+   <span class=n>position_and_context</span> <span class=p>{</span><span class=mi>2787</span><span class=p>:</span> <span class=s1>&#39;script&#39;</span><span class=p>}</span>
+   <span class=n>environment_details</span> <span class=p>{</span><span class=mi>2787</span><span class=p>:</span> <span class=p>{</span><span class=s1>&#39;details&#39;</span><span class=p>:</span> <span class=p>{</span><span class=s1>&#39;quote&#39;</span><span class=p>:</span> <span class=s1>&#39;&#39;</span><span class=p>}}}</span>
+   
+        </code></pre></td></tr></table></div></div><h3 id=总结>总结</h3><ol><li><p><code>XSStrike</code> 主要模块有4个：</p><ul><li><code>singleFuzz</code> 模糊测试</li><li><code>brutefocer</code> 暴力弹窗</li><li><code>scan</code> 分为 <code>dom</code> 测试和 <code>reflect</code> 测试</li><li><code>crawler</code> 爬虫模块<br></li></ul></li><li><p>按照功能</p><ol><li><p><strong>singleFuzz 的WAF检测功能</strong>， <code>singleFuzz</code> 部分会先进行 waf 检测，通过将请求参数替换为 <code>&lt;&gt;alert(xss)&lt;&gt;</code> 来测试返回值，判断 <code>response</code> 的 <code>response_code</code> <code>response_body</code> <code>response_header</code> 三项指标来判断是否有 <code>WAF</code></p></li><li><p><strong>singleFuzz 的 fuzz 功能</strong>， <code>fuzzes</code> 部分为非恶意 <code>payload</code>，通过注入非恶意字符来判断网站整体情况</p></li><li><p><strong>brutefocer 暴力注入</strong>，此功能直接注入事先定义好的常用 <code>payload_list</code> 来判断是否有漏洞</p></li><li><p><strong>scan 模块 dom XSS 静态检测</strong>，此功能用来静态检测页面有无容易触发 Dom XSS 的函数，先通过正则匹配所有 <code>script</code> 标签，再对每个 <code>script</code> 标签正则匹配是否有恶意函数。</p></li><li><p><strong>scan 模块自动查找注入参数</strong>，此功能用来用来自动查找页面表单，通过正则表达式查找 <code>input</code> 标签，并解析标签内容，用<strong>带入随机字符</strong>串请求判断参数是否查找成功。</p></li><li><p><strong>scan 模块HTML解析</strong>，分为以下几个步骤：</p><ul><li><p>带入随机字符串请求获取返回内容</p></li><li><p>用正则分别获取随机字符串的出现在 HTML 中的位置，位置分为 <code>script</code> 标签、其他标签、<code>HTML</code> 页面、注释4个大类，对获取到位置详细的标明每个随机字符串输出的<strong>位置</strong>、<strong>标签</strong>、<strong>name</strong>、<strong>value</strong>等.将出现在 <code>style|template|textarea|title</code> 等地方的匹配出来，打上标记为badTag</p></li><li><p>根据随机字符串输出位置生成特殊符号Payload，将这些特殊符号带入参数去请求，在对特殊符号请求的返回结果截取相应位置的字符串，对<strong>返回字符串</strong>和请求时带特殊符号的<strong>payload字符串</strong>相似度进行打分。生成特殊符号 payload 时，针对输出点的位置生成不同的特殊符号，如 <code>comments</code> 位置特殊符号为 <code>--&gt;</code> ，script 特殊符号为 <code>&lt; &gt; &lt;/scRipT/&gt;</code> ，html 熟悉特殊符号为 <code>&amp;lt; &amp;gt;，“， ‘</code>等等</p></li><li><p>根据输出位置的相似度分值和输出位置，生成 <code>攻击 payload</code>，此 <code>payload</code> 为URL编码、Unicode编码、HTML事件，生成过程中会random字符串大小写</p></li><li><p>最后遍历 <code>攻击Payload</code> 请求页面，请求结束后也是会匹配返回值带 payload 字符串，然后计算和原 payload 的相似度，根据相似度判断是否有XSS注入。</p></li></ul></li></ol></li></ol><h1 id=参考资料>参考资料</h1><div class=footnotes><hr><ol><li id=fn:0><a href=https://chybeta.github.io/2018/03/10/XSStrike-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/#XSStrike>XSStrike 源码阅读</a>
+<a class=footnote-return href=#fnref:0><sup>[return]</sup></a></li><li id=fn:1><a href=https://www.zhihu.com/question/21000872/answer/16856382>Python 中的赋值、拷贝和深拷贝</a>
+<a class=footnote-return href=#fnref:1><sup>[return]</sup></a></li></ol></div></div><div class=post-copyright><p class=copyright-item><span class=item-title>文章作者</span>
+<span class=item-content><a href=https://moond4rk.xyz/>moonD4rk</a></span></p><p class=copyright-item><span class=item-title>初次发布</span>
+<span class=item-content>2019-11-12</span></p><p class=copyright-item><span class=item-title>永久链接</span>
+<span class=item-content><a href=https://moond4rk.xyz/post/xsstrike-source-code-read/>https://moond4rk.xyz/post/xsstrike-source-code-read/</a></span></p></div><footer class=post-footer><div class=post-tags><a href=/tags/%E5%AE%89%E5%85%A8/>安全</a>
+<a href=/tags/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/>源码阅读</a>
+<a href=/tags/xss/>XSS</a></div><nav class=post-nav><a class=prev href=/post/android-reverse/><i class="iconfont icon-left"></i><span class="prev-text nav-default">记一次安卓逆向</span>
+<span class="prev-text nav-mobile">上一篇</span></a></nav></footer></article></div></div></main><footer id=footer class=footer><div class=social-links><a href=mailto:cranelee13&#43;blog@gmail.com class="iconfont icon-email" title=email></a><a href=https://github.com/moonD4rk class="iconfont icon-github" title=github></a><a href=https://moond4rk.xyz/index.xml type=application/rss+xml class="iconfont icon-rss" title=rss></a></div><div class=copyright><span class=power-by>由 <a class=hexo-link href=https://gohugo.io>Hugo</a> 强力驱动</span>
+<span class=division>|</span>
+<span class=theme-info>主题 -
+<a class=theme-link href=https://github.com/olOwOlo/hugo-theme-even>Even</a></span>
+<span class=copyright-year>&copy;
+2020
+<span class=heart><i class="iconfont icon-heart"></i></span><span class=author>moonD4rk</span></span></div></footer><div class=back-to-top id=back-to-top><i class="iconfont icon-up"></i></div></div><script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script><script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script><script type=text/javascript src=/lib/fancybox/jquery.fancybox-3.1.20.min.js></script><script type=text/javascript src=/dist/even.26188efa.min.js></script></body></html>
